@@ -41,13 +41,18 @@ chatForm.addEventListener('submit', async (e) => {
       renderConfiguracion(data.configuracion_final);
     }
 
+    // Si responde con 'output' (formato actual de tu N8N)
+    if (data.output) {
+      appendMessage('Agente', data.output);
+    }
+
     // Si responde con 'respuesta' para mostrar mensaje de chat del agente
     if (data.respuesta) {
       appendMessage('Agente', data.respuesta);
     }
 
     // Si responde con ambos o ninguno, controla ambos casos
-    if (!data.respuesta && !data.configuracion_final) {
+    if (!data.respuesta && !data.configuracion_final && !data.output) {
       console.log('Respuesta vacía o formato incorrecto:', data);
       appendMessage('Agente', 'No se recibió respuesta del agente. (Revisa el flujo de n8n)');
     }
