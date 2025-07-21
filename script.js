@@ -17,12 +17,23 @@ chatForm.addEventListener('submit', async (e) => {
   showLoadingSpinner();
 
   try {
+    console.log('Enviando mensaje a N8N:', message);
+    
     const response = await fetch(N8N_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mensaje: message })
     });
+
+    console.log('Estado de respuesta:', response.status);
+    
+    if (!response.ok) {
+      throw new Error(`Error HTTP: ${response.status}`);
+    }
+
     const data = await response.json();
+    console.log('Respuesta de N8N:', data);
+    
     hideLoadingSpinner();
 
     // Si el webhook de n8n responde con 'configuracion_final' como objeto
@@ -37,12 +48,14 @@ chatForm.addEventListener('submit', async (e) => {
 
     // Si responde con ambos o ninguno, controla ambos casos
     if (!data.respuesta && !data.configuracion_final) {
+      console.log('Respuesta vacía o formato incorrecto:', data);
       appendMessage('Agente', 'No se recibió respuesta del agente. (Revisa el flujo de n8n)');
     }
 
   } catch (error) {
+    console.error('Error al conectar con N8N:', error);
     hideLoadingSpinner();
-    appendMessage('Agente', 'Lo siento, hubo un error al procesar tu mensaje. Inténtalo de nuevo.');
+    appendMessage('Agente', `Error de conexión: ${error.message}`);
   }
 });
 
