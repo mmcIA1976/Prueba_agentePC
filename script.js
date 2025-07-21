@@ -10,6 +10,14 @@ const fotosContainer = document.getElementById('fotos-container');
 
 const N8N_API_URL = "https://mauriciomeseguer.up.railway.app/webhook/bf351844-0718-4d84-bd9c-e5fbea35a83b";
 
+// Importar la API de la base de datos (simulamos con fetch interno)
+async function callLocalAPI(endpoint, data) {
+  // Por ahora simulamos las llamadas a la API
+  // Más adelante podemos implementar un servidor Express
+  console.log(`API Call: ${endpoint}`, data);
+  return { success: true };
+}
+
 // Función de login de Replit
 function LoginWithReplit() {
   window.addEventListener("message", authComplete);
@@ -42,6 +50,10 @@ async function checkAuth() {
       if (user && user.id) {
         currentUser = user;
         chatId = generateChatId();
+        
+        // Inicializar usuario en base de datos local
+        await initializeUser(user);
+        
         showMainApp();
         updateUserUI();
       } else {
@@ -88,6 +100,30 @@ function logout() {
   showLoginScreen();
 }
 
+// Inicializar usuario en base de datos
+async function initializeUser(replitUser) {
+  try {
+    await callLocalAPI('init-user', replitUser);
+    console.log('Usuario inicializado en base de datos:', replitUser.name);
+  } catch (error) {
+    console.error('Error al inicializar usuario:', error);
+  }
+}
+
+// Guardar mensaje en base de datos local
+async function saveMessageToDB(author, content) {
+  try {
+    await callLocalAPI('save-message', {
+      chatId: chatId,
+      author: author,
+      content: content,
+      userId: currentUser ? currentUser.id : null
+    });
+  } catch (error) {
+    console.error('Error al guardar mensaje:', error);
+  }
+}
+
 // Inicializar la aplicación
 document.addEventListener('DOMContentLoaded', checkAuth);
 
@@ -96,6 +132,10 @@ chatForm.addEventListener('submit', async (e) => {
   const message = chatInput.value.trim();
   if (!message) return;
   appendMessage('Tú', message);
+  
+  // Guardar mensaje del usuario en BD
+  await saveMessageToDB('Tú', message);
+  
   chatInput.value = '';
 
   // Mostrar spinner de carga
@@ -134,11 +174,15 @@ chatForm.addEventListener('submit', async (e) => {
     // Si responde con 'output' (formato actual de tu N8N)
     if (data.output) {
       appendMessage('Agente', data.output);
+      // Guardar respuesta del agente en BD
+      await saveMessageToDB('Agente', data.output);
     }
 
     // Si responde con 'respuesta' para mostrar mensaje de chat del agente
     if (data.respuesta) {
       appendMessage('Agente', data.respuesta);
+      // Guardar respuesta del agente en BD
+      await saveMessageToDB('Agente', data.respuesta);
     }
 
     // Si responde con ambos o ninguno, controla ambos casos
