@@ -10,12 +10,27 @@ const fotosContainer = document.getElementById('fotos-container');
 
 const N8N_API_URL = "https://mauriciomeseguer.up.railway.app/webhook/bf351844-0718-4d84-bd9c-e5fbea35a83b";
 
-// Importar la API de la base de datos (simulamos con fetch interno)
+// Llamadas a la API local del servidor Express
 async function callLocalAPI(endpoint, data) {
-  // Por ahora simulamos las llamadas a la API
-  // Más adelante podemos implementar un servidor Express
-  console.log(`API Call: ${endpoint}`, data);
-  return { success: true };
+  try {
+    const url = `/api/${endpoint.replace('init-user', 'init-user').replace('save-message', 'save-message')}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log(`✅ API Call: ${endpoint}`, result);
+    return result;
+  } catch (error) {
+    console.error(`❌ Error en API Call ${endpoint}:`, error);
+    return { success: false, error: error.message };
+  }
 }
 
 // Función de login de Replit
