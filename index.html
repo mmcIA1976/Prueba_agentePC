@@ -5,30 +5,55 @@
   <title>IA Configurador de PC</title>
   <link rel="stylesheet" href="style.css">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script authed="location.reload()" src="https://auth.replit.com/script.js"></script>
 </head>
 <body>
-  <header>
-    <div class="header-content">
-      <img src="https://api.dicebear.com/7.x/bottts/svg?seed=robot" class="header-logo" alt="Logo">
-      <h1>Configurador de PC con IA</h1>
+  <!-- Pantalla de login -->
+  <div id="login-screen" style="display: none;">
+    <div class="login-container">
+      <div class="login-content">
+        <img src="https://api.dicebear.com/7.x/bottts/svg?seed=robot" class="login-logo" alt="Logo">
+        <h1>Configurador de PC con IA</h1>
+        <p>Inicia sesión para comenzar a configurar tu PC ideal</p>
+        <button onclick="LoginWithReplit()" class="login-button">
+          <img src="https://replit.com/public/images/logo-small.png" alt="Replit" width="20">
+          Iniciar sesión con Replit
+        </button>
+      </div>
     </div>
-  </header>
+  </div>
+
+  <!-- App principal (se muestra cuando está logueado) -->
+  <div id="main-app" style="display: none;">
+    <header>
+      <div class="header-content">
+        <img src="https://api.dicebear.com/7.x/bottts/svg?seed=robot" class="header-logo" alt="Logo">
+        <h1>Configurador de PC con IA</h1>
+        <div class="user-info">
+          <img id="user-avatar" class="user-avatar" alt="Usuario">
+          <span id="user-name">Usuario</span>
+          <button onclick="logout()" class="logout-btn">Cerrar sesión</button>
+        </div>
+      </div>
+    </header></div>
   <main>
-    <div id="chat-container">
-      <div id="chat-log"></div>
-      <form id="chat-form" autocomplete="off">
-        <input type="text" id="chat-input" placeholder="Escribe tu mensaje...">
-        <button type="submit">Enviar</button>
-      </form>
-    </div>
-    <div id="config-container"></div>
-    <div id="fotos-container"></div>
-  </main>
-  <footer>
-    <div class="footer-content">
-      <span>Creado en Replit · 2025</span>
-    </div>
-  </footer>
+      <div id="chat-container">
+        <div id="chat-log"></div>
+        <form id="chat-form" autocomplete="off">
+          <input type="text" id="chat-input" placeholder="Escribe tu mensaje...">
+          <button type="submit">Enviar</button>
+        </form>
+      </div>
+      <div id="config-container"></div>
+      <div id="fotos-container"></div>
+    </main>
+    <footer>
+      <div class="footer-content">
+        <span>Creado en Replit · 2025</span>
+      </div>
+    </footer>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>

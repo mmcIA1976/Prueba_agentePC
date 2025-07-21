@@ -1,3 +1,7 @@
+// Variables globales
+let currentUser = null;
+let chatId = null;
+
 const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
 const chatLog = document.getElementById('chat-log');
@@ -5,6 +9,87 @@ const configContainer = document.getElementById('config-container');
 const fotosContainer = document.getElementById('fotos-container');
 
 const N8N_API_URL = "https://mauriciomeseguer.up.railway.app/webhook/bf351844-0718-4d84-bd9c-e5fbea35a83b";
+
+// Función de login de Replit
+function LoginWithReplit() {
+  window.addEventListener("message", authComplete);
+  var h = 500;
+  var w = 350;
+  var left = screen.width / 2 - w / 2;
+  var top = screen.height / 2 - h / 2;
+
+  var authWindow = window.open(
+    "https://replit.com/auth_with_repl_site?domain=" + location.host,
+    "_blank",
+    "modal=yes, toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width=" +
+      w + ", height=" + h + ", top=" + top + ", left=" + left
+  );
+
+  function authComplete(e) {
+    if (e.data !== "auth_complete") return;
+    window.removeEventListener("message", authComplete);
+    authWindow.close();
+    checkAuth();
+  }
+}
+
+// Verificar autenticación
+async function checkAuth() {
+  try {
+    const response = await fetch('/__replauthuser');
+    if (response.ok) {
+      const user = await response.json();
+      if (user && user.id) {
+        currentUser = user;
+        chatId = generateChatId();
+        showMainApp();
+        updateUserUI();
+      } else {
+        showLoginScreen();
+      }
+    } else {
+      showLoginScreen();
+    }
+  } catch (error) {
+    console.error('Error al verificar autenticación:', error);
+    showLoginScreen();
+  }
+}
+
+// Generar ID único de chat
+function generateChatId() {
+  return `${currentUser.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// Mostrar pantalla de login
+function showLoginScreen() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('main-app').style.display = 'none';
+}
+
+// Mostrar app principal
+function showMainApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('main-app').style.display = 'block';
+}
+
+// Actualizar UI del usuario
+function updateUserUI() {
+  if (currentUser) {
+    document.getElementById('user-avatar').src = currentUser.profileImage || 'https://api.dicebear.com/7.x/personas/svg?seed=' + currentUser.id;
+    document.getElementById('user-name').textContent = currentUser.name || 'Usuario';
+  }
+}
+
+// Cerrar sesión
+function logout() {
+  currentUser = null;
+  chatId = null;
+  showLoginScreen();
+}
+
+// Inicializar la aplicación
+document.addEventListener('DOMContentLoaded', checkAuth);
 
 chatForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -22,7 +107,12 @@ chatForm.addEventListener('submit', async (e) => {
     const response = await fetch(N8N_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mensaje: message })
+      body: JSON.stringify({ 
+        mensaje: message,
+        user_id: currentUser ? currentUser.id : null,
+        chat_id: chatId,
+        user_name: currentUser ? currentUser.name : 'Usuario'
+      })
     });
 
     console.log('Estado de respuesta:', response.status);
