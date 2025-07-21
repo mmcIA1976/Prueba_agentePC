@@ -4,8 +4,7 @@ const chatLog = document.getElementById('chat-log');
 const configContainer = document.getElementById('config-container');
 const fotosContainer = document.getElementById('fotos-container');
 
-// Puedes poner aquí la URL de tu webhook cuando lo tengas
-// const N8N_API_URL = "https://TU_WEBHOOK_DE_N8N";
+const N8N_API_URL = "https://mauriciomeseguer.up.railway.app/webhook/bf351844-0718-4d84-bd9c-e5fbea35a83b";
 
 chatForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -17,38 +16,6 @@ chatForm.addEventListener('submit', async (e) => {
   // Mostrar spinner de carga
   showLoadingSpinner();
 
-  // Simula la respuesta del agente (después lo cambias por fetch a n8n)
-  setTimeout(() => {
-    hideLoadingSpinner();
-    if (message.toLowerCase().includes('final')) {
-      // Simula la configuración final
-      renderConfiguracion({
-        componentes: [
-          {
-            nombre: 'Procesador',
-            descripcion: 'AMD Ryzen 5 5600X, 6 núcleos, 12 hilos, hasta 4.6 GHz',
-            imagen: 'https://m.media-amazon.com/images/I/61TPRRqyxCL._AC_SL1500_.jpg'
-          },
-          {
-            nombre: 'Tarjeta Gráfica',
-            descripcion: 'NVIDIA RTX 4060 8GB GDDR6',
-            imagen: 'https://m.media-amazon.com/images/I/81SkV7y3xGL._AC_SL1500_.jpg'
-          },
-          {
-            nombre: 'Memoria RAM',
-            descripcion: '16GB DDR4 3200MHz (2x8GB)',
-            imagen: 'https://m.media-amazon.com/images/I/71RWp6MNZ2L._AC_SL1500_.jpg'
-          }
-        ]
-      });
-    } else {
-      appendMessage('Agente', '¡Mensaje recibido! Dime tu presupuesto o necesidades y cuando estés listo escribe "final" para ver una configuración de ejemplo.');
-    }
-  }, 1500);
-
-  // Si quieres conectar con n8n:
-  /*
-  showLoadingSpinner();
   try {
     const response = await fetch(N8N_API_URL, {
       method: 'POST',
@@ -57,16 +24,26 @@ chatForm.addEventListener('submit', async (e) => {
     });
     const data = await response.json();
     hideLoadingSpinner();
+
+    // Si el webhook de n8n responde con 'configuracion_final' como objeto
     if (data.configuracion_final) {
       renderConfiguracion(data.configuracion_final);
-    } else {
-      appendMessage('Agente', data.respuesta || '...');
     }
+
+    // Si responde con 'respuesta' para mostrar mensaje de chat del agente
+    if (data.respuesta) {
+      appendMessage('Agente', data.respuesta);
+    }
+
+    // Si responde con ambos o ninguno, controla ambos casos
+    if (!data.respuesta && !data.configuracion_final) {
+      appendMessage('Agente', 'No se recibió respuesta del agente. (Revisa el flujo de n8n)');
+    }
+
   } catch (error) {
     hideLoadingSpinner();
     appendMessage('Agente', 'Lo siento, hubo un error al procesar tu mensaje. Inténtalo de nuevo.');
   }
-  */
 });
 
 function appendMessage(author, text) {
