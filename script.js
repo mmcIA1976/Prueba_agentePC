@@ -41,8 +41,12 @@ function LoginWithReplit() {
   var left = screen.width / 2 - w / 2;
   var top = screen.height / 2 - h / 2;
 
+  // Usar el hostname correcto para Replit Auth
+  var domain = window.location.hostname;
+  console.log('🔐 Intentando login con dominio:', domain);
+
   var authWindow = window.open(
-    "https://replit.com/auth_with_repl_site?domain=" + location.host,
+    "https://replit.com/auth_with_repl_site?domain=" + domain,
     "_blank",
     "modal=yes, toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width=" +
       w + ", height=" + h + ", top=" + top + ", left=" + left
@@ -59,9 +63,13 @@ function LoginWithReplit() {
 // Verificar autenticación
 async function checkAuth() {
   try {
+    console.log('🔍 Verificando autenticación...');
     const response = await fetch('/__replauthuser');
+    
     if (response.ok) {
       const user = await response.json();
+      console.log('✅ Usuario autenticado:', user);
+      
       if (user && user.id) {
         currentUser = user;
         chatId = generateChatId();
@@ -72,13 +80,15 @@ async function checkAuth() {
         showMainApp();
         updateUserUI();
       } else {
+        console.log('❌ No se encontró usuario válido');
         showLoginScreen();
       }
     } else {
+      console.log('❌ Respuesta de auth no OK:', response.status);
       showLoginScreen();
     }
   } catch (error) {
-    console.error('Error al verificar autenticación:', error);
+    console.error('❌ Error al verificar autenticación:', error);
     showLoginScreen();
   }
 }
