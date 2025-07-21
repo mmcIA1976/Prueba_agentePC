@@ -14,8 +14,12 @@ chatForm.addEventListener('submit', async (e) => {
   appendMessage('Tú', message);
   chatInput.value = '';
 
+  // Mostrar spinner de carga
+  showLoadingSpinner();
+
   // Simula la respuesta del agente (después lo cambias por fetch a n8n)
   setTimeout(() => {
+    hideLoadingSpinner();
     if (message.toLowerCase().includes('final')) {
       // Simula la configuración final
       renderConfiguracion({
@@ -40,20 +44,27 @@ chatForm.addEventListener('submit', async (e) => {
     } else {
       appendMessage('Agente', '¡Mensaje recibido! Dime tu presupuesto o necesidades y cuando estés listo escribe "final" para ver una configuración de ejemplo.');
     }
-  }, 900);
+  }, 1500);
 
   // Si quieres conectar con n8n:
   /*
-  const response = await fetch(N8N_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mensaje: message })
-  });
-  const data = await response.json();
-  if (data.configuracion_final) {
-    renderConfiguracion(data.configuracion_final);
-  } else {
-    appendMessage('Agente', data.respuesta || '...');
+  showLoadingSpinner();
+  try {
+    const response = await fetch(N8N_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mensaje: message })
+    });
+    const data = await response.json();
+    hideLoadingSpinner();
+    if (data.configuracion_final) {
+      renderConfiguracion(data.configuracion_final);
+    } else {
+      appendMessage('Agente', data.respuesta || '...');
+    }
+  } catch (error) {
+    hideLoadingSpinner();
+    appendMessage('Agente', 'Lo siento, hubo un error al procesar tu mensaje. Inténtalo de nuevo.');
   }
   */
 });
@@ -73,6 +84,32 @@ function appendMessage(author, text) {
   chatLog.appendChild(div);
   // AUTOSCROLL vertical al último mensaje
   chatLog.scrollTop = chatLog.scrollHeight;
+}
+
+let loadingSpinnerElement = null;
+
+function showLoadingSpinner() {
+  const div = document.createElement('div');
+  div.className = 'loading-spinner';
+  div.innerHTML = `
+    <img class="avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=robot" alt="IA">
+    <div class="spinner"></div>
+    <div class="loading-dots">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  `;
+  chatLog.appendChild(div);
+  chatLog.scrollTop = chatLog.scrollHeight;
+  loadingSpinnerElement = div;
+}
+
+function hideLoadingSpinner() {
+  if (loadingSpinnerElement) {
+    chatLog.removeChild(loadingSpinnerElement);
+    loadingSpinnerElement = null;
+  }
 }
 
 function renderConfiguracion(config) {

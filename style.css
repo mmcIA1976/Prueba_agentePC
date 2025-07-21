@@ -205,6 +205,65 @@ footer {
     width: 98vw;
   }
 }
+/* Spinner animado de carga */
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f0f4fa;
+  color: #24304a;
+  border-bottom-left-radius: 8px;
+  padding: 10px 16px;
+  border-radius: 16px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.03);
+  max-width: 60vw;
+  min-width: 70px;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e3e8f7;
+  border-top: 2px solid #2e67f8;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-dots {
+  display: flex;
+  gap: 3px;
+}
+
+.loading-dots span {
+  width: 4px;
+  height: 4px;
+  background: #2e67f8;
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out;
+}
+
+.loading-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
 @media (max-width: 600px) {
   .header-content {
     flex-direction: column;
