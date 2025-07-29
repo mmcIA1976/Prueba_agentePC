@@ -63,6 +63,7 @@
             <div id="chat-log"></div>
             <form id="chat-form" autocomplete="off" style="display:flex; gap:8px;">
               <input type="text" id="chat-input" placeholder="Escribe tu mensaje...">
+              <button type="button" id="mic-button" title="Hablar">🎤</button>
               <button type="submit">Enviar</button>
             </form>
           </div>
@@ -73,31 +74,7 @@
       <div id="config-container"></div>
       <div id="fotos-container"></div>
 
-      <!-- VAPI widget, SIEMPRE visible -->
-      <vapi-widget
-        public-key="b7395881-a803-4c64-97c2-2e157ad1633c"
-        assistant-id="ed7107e6-3fa0-43c7-8440-5bf0d6765a10"
-        mode="voice"
-        theme="dark"
-        base-bg-color="#000000"
-        accent-color="#14B8A6"
-        cta-button-color="#000000"
-        cta-button-text-color="#ffffff"
-        border-radius="large"
-        size="full"
-        position="top-right"
-        title="HABLA CON EL MICRO "
-        start-button-text="Comencemos"
-        end-button-text="Finalizar"
-        cta-subtitle="configurador IA"
-        chat-first-message="Hey, How can I help you today?"
-        chat-placeholder="Type your message..."
-        voice-show-transcript="false"
-        consent-required="true"
-        consent-title="Terms and conditions"
-        consent-content='By clicking "Agree," and each time I interact with this AI agent, I consent to the recording, storage, and sharing of my communications with third-party service providers, and as otherwise described in our Terms of Service.'
-        consent-storage-key="vapi_widget_consent"
-      ></vapi-widget>
+      
     </main>
     <footer>
       <div class="footer-content">
@@ -106,100 +83,9 @@
     </footer>
   </div>
 
-  <script>
-    // URL de tu webhook n8n
-    const N8N_API_URL = "https://mauriciomeseguer.up.railway.app/webhook/bf351844-0718-4d84-bd9c-e5fbea35a83b";
-
-    // ---- VARIABLES GLOBALES ----
-    let currentUser = null;
-    let chatId = null;
-
-    const manualLoginForm = document.getElementById('manual-login-form');
-    const userNameInput = document.getElementById('user-name-input');
-    const userEmailInput = document.getElementById('user-email-input');
-
-    // --- LIMPIEZA Y VALIDACIÓN ---
-    function cleanText(text) {
-      return text.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ@.\-_\s]/g, '').trim();
-    }
-    function isValidEmail(email) {
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    }
-
-    manualLoginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      let name = cleanText(userNameInput.value);
-      let email = cleanText(userEmailInput.value).toLowerCase();
-
-      if (name.length < 2 || name.length > 32) {
-        alert('Pon un nombre válido (2-32 caracteres).');
-        return;
-      }
-      if (!isValidEmail(email) || email.length > 60) {
-        alert('Pon un email válido (hasta 60 caracteres).');
-        return;
-      }
-
-      currentUser = {
-        id: email,
-        name: name,
-        email: email,
-        profileImage: ''
-      };
-      chatId = generateChatId();
-
-      showMainApp();
-      updateUserUI();
-
-      // --- Envía SOLO nombre y chatId a n8n tras login ---
-      fetch(N8N_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_name: currentUser.name,
-          chat_id: chatId
-        })
-      });
-    });
-
-    // --- Generar ID único de chat ---
-    function generateChatId() {
-      return ${Date.now()}_${Math.random().toString(36).substr(2, 9)};
-    }
-
-    // --- Mostrar pantalla de login ---
-    function showLoginScreen() {
-      document.getElementById('login-screen').style.display = 'flex';
-      document.getElementById('main-app').style.display = 'none';
-      manualLoginForm.reset();
-    }
-
-    // --- Mostrar app principal ---
-    function showMainApp() {
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('main-app').style.display = 'block';
-    }
-
-    // --- Actualizar UI del usuario ---
-    function updateUserUI() {
-      if (currentUser) {
-        document.getElementById('user-avatar').src =
-          https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(currentUser.name)};
-        document.getElementById('user-name').textContent = currentUser.name || 'Usuario';
-      }
-    }
-
-    // --- Cerrar sesión ---
-    function logout() {
-      currentUser = null;
-      chatId = null;
-      showLoginScreen();
-    }
-
-    // --- Inicializar la aplicación ---
-    document.addEventListener('DOMContentLoaded', showLoginScreen);
-  </script>
-  <!-- SDK VAPI solo se carga una vez al final -->
-  <script src="https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js" async type="text/javascript"></script>
+  <!-- Scripts locales -->
+  <script src="script.js"></script>
+  <!-- VAPI SDK -->
+  <script src="https://unpkg.com/@vapi-ai/web@latest/dist/index.js"></script>
 </body>
 </html>

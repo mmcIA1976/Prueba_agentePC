@@ -67,25 +67,25 @@ manualLoginForm.addEventListener('submit', async (e) => {
 // --- LLAMADAS API LOCAL EXPRESS ---
 async function callLocalAPI(endpoint, data) {
   try {
-    const url = /api/${endpoint};
+    const url = `/api/${endpoint}`;
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!response.ok) throw new Error(HTTP error! status: ${response.status});
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const result = await response.json();
-    console.log(✅ API Call: ${endpoint}, result);
+    console.log(`✅ API Call: ${endpoint}`, result);
     return result;
   } catch (error) {
-    console.error(❌ Error en API Call ${endpoint}:, error);
+    console.error(`❌ Error en API Call ${endpoint}:`, error);
     return { success: false, error: error.message };
   }
 }
 
 // --- Generar ID único de chat ---
 function generateChatId() {
-  return ${currentUser.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)};
+  return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
 // --- Mostrar pantalla de login ---
@@ -108,7 +108,7 @@ function showMainApp() {
 function updateUserUI() {
   if (currentUser) {
     document.getElementById('user-avatar').src =
-      https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(currentUser.name)};
+      `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(currentUser.name)}`;
     document.getElementById('user-name').textContent = currentUser.name || 'Usuario';
   }
 }
@@ -144,8 +144,129 @@ async function saveMessageToDB(author, content) {
   }
 }
 
+// --- VAPI Integration ---
+let vapi = null;
+let isRecording = false;
+
+function initializeVAPI() {
+  // Esperar a que VAPI esté disponible
+  if (typeof window.Vapi !== 'undefined') {
+    try {
+      vapi = new window.Vapi("b7395881-a803-4c64-97c2-2e167ad1633c");
+      
+      console.log('✅ VAPI inicializado correctamente');
+
+      // Eventos de VAPI
+      vapi.on('call-start', () => {
+        console.log('Llamada iniciada');
+        isRecording = true;
+        updateMicButton();
+        appendMessage('Sistema', '🎤 Conversación iniciada...');
+      });
+
+      vapi.on('call-end', () => {
+        console.log('Llamada terminada');
+        isRecording = false;
+        updateMicButton();
+        appendMessage('Sistema', '📞 Conversación terminada');
+      });
+
+      vapi.on('speech-start', () => {
+        console.log('Usuario empezó a hablar');
+      });
+
+      vapi.on('speech-end', () => {
+        console.log('Usuario terminó de hablar');
+      });
+
+      vapi.on('message', (message) => {
+        console.log('Mensaje VAPI:', message);
+        
+        if (message.type === 'transcript' && message.transcriptType === 'final') {
+          if (message.transcript) {
+            appendMessage('Tú', message.transcript);
+            saveMessageToDB('Tú', message.transcript);
+          }
+        }
+        
+        if (message.type === 'function-call') {
+          console.log('Function call:', message);
+        }
+        
+        if (message.type === 'conversation-update') {
+          console.log('Conversation update:', message);
+        }
+      });
+
+      vapi.on('error', (error) => {
+        console.error('Error VAPI:', error);
+        appendMessage('Sistema', `❌ Error: ${error.message || 'Error de conexión'}`);
+        isRecording = false;
+        updateMicButton();
+      });
+
+    } catch (error) {
+      console.error('❌ Error al inicializar VAPI:', error);
+    }
+  } else {
+    console.log('⏳ VAPI no disponible aún, reintentando...');
+    setTimeout(initializeVAPI, 1000);
+  }
+}
+
+// Función para actualizar el botón del micrófono
+function updateMicButton() {
+  const micButton = document.getElementById('mic-button');
+  if (!micButton) return;
+  
+  if (isRecording) {
+    micButton.textContent = '⏹️';
+    micButton.classList.add('recording');
+    micButton.title = 'Detener conversación';
+    micButton.style.backgroundColor = '#ff4757';
+    micButton.style.color = 'white';
+  } else {
+    micButton.textContent = '🎤';
+    micButton.classList.remove('recording');
+    micButton.title = 'Iniciar conversación';
+    micButton.style.backgroundColor = '#2ed573';
+    micButton.style.color = 'white';
+  }
+}
+
+// Función para el botón del micrófono
+function toggleRecording() {
+  if (!vapi) {
+    appendMessage('Sistema', '❌ VAPI no está disponible. Recargando página...');
+    setTimeout(() => location.reload(), 2000);
+    return;
+  }
+
+  if (!isRecording) {
+    console.log('🎤 Iniciando conversación...');
+    vapi.start("ed7107e6-3fa0-43c7-8440-5bf0d6765a10");
+  } else {
+    console.log('⏹️ Deteniendo conversación...');
+    vapi.stop();
+  }
+}
+
 // --- Inicializar la aplicación ---
-document.addEventListener('DOMContentLoaded', showLoginScreen);
+document.addEventListener('DOMContentLoaded', () => {
+  showLoginScreen();
+  
+  // Inicializar VAPI cuando se carga la página
+  setTimeout(() => {
+    initializeVAPI();
+    
+    // Event listener para el botón del micrófono
+    const micButton = document.getElementById('mic-button');
+    if (micButton) {
+      micButton.addEventListener('click', toggleRecording);
+      updateMicButton(); // Inicial styling
+    }
+  }, 2000);
+});
 
 // --- Chat envío de mensajes ---
 if (chatForm) {
@@ -170,7 +291,7 @@ if (chatForm) {
         })
       });
       console.log('Estado de respuesta:', response.status);
-      if (!response.ok) throw new Error(Error HTTP: ${response.status});
+      if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
       const data = await response.json();
       console.log('Respuesta de N8N:', data);
       hideLoadingSpinner();
@@ -199,7 +320,7 @@ if (chatForm) {
       }
     } catch (error) {
       hideLoadingSpinner();
-      appendMessage('Agente', Error de conexión: ${error.message});
+      appendMessage('Agente', `Error de conexión: ${error.message}`);
     }
   });
 }
@@ -216,7 +337,7 @@ function appendMessage(author, text) {
     clase = 'chat-message agent';
   }
   div.className = clase;
-  div.innerHTML = ${avatarImg}<div>${text}</div>;
+  div.innerHTML = `${avatarImg}<div>${text}</div>`;
   chatLog.appendChild(div);
 
   if (author === 'Agente' && text.length > 250) {
@@ -230,7 +351,7 @@ let loadingSpinnerElement = null;
 function showLoadingSpinner() {
   const div = document.createElement('div');
   div.className = 'loading-spinner';
-  div.innerHTML = 
+  div.innerHTML = `
     <img class="avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=robot" alt="IA">
     <div class="spinner"></div>
     <div class="loading-dots">
@@ -238,7 +359,7 @@ function showLoadingSpinner() {
       <span></span>
       <span></span>
     </div>
-  ;
+  `;
   chatLog.appendChild(div);
   chatLog.scrollTop = chatLog.scrollHeight;
   loadingSpinnerElement = div;
@@ -271,14 +392,14 @@ function renderConfiguracion(config_final) {
 
   // Renderiza todas las opciones válidas (AMD, Intel, etc.)
   opcionesValidas.forEach(option => {
-    const title = option.nombre ? <h3>${option.nombre} ${option.total ? - ${option.total} : ''}</h3> : '';
-    let html = <div class="config-option">${title}<ul>;
+    const title = option.nombre ? `<h3>${option.nombre} ${option.total ? `- ${option.total}` : ''}</h3>` : '';
+    let html = `<div class="config-option">${title}<ul>`;
     option.componentes.forEach(comp => {
-      html += <li>
+      html += `<li>
         <b>${comp.tipo || comp.nombre || ''}:</b> ${comp.modelo || comp.descripcion || ''}
-        ${comp.precio ? <span> · <b>${comp.precio}</b></span> : ''}
-        ${comp.url ?  · <a href="${comp.url}" target="_blank" rel="noopener">Comprar</a> : ''}
-      </li>;
+        ${comp.precio ? `<span> · <b>${comp.precio}</b></span>` : ''}
+        ${comp.url ? ` · <a href="${comp.url}" target="_blank" rel="noopener">Comprar</a>` : ''}
+      </li>`;
     });
     html += '</ul></div>';
     configContainer.innerHTML += html;
