@@ -163,10 +163,10 @@ function initializeVAPI() {
     return;
   }
   
-  // El SDK oficial expone 'Vapi' directamente en window
-  const vapiConstructor = window.Vapi;
+  // El SDK puede estar disponible como Vapi, VapiSDK, o en window.VapiAI
+  const vapiConstructor = window.Vapi || window.VapiSDK || (window.VapiAI && window.VapiAI.Vapi);
   
-  console.log('🔍 Verificando VAPI oficial:', typeof vapiConstructor, !!vapiConstructor);
+  console.log('🔍 Verificando VAPI:', typeof vapiConstructor, !!vapiConstructor, Object.keys(window).filter(k => k.toLowerCase().includes('vapi')));
   
   if (vapiConstructor && typeof vapiConstructor === 'function') {
     try {
@@ -247,12 +247,68 @@ function initializeVAPI() {
 
 // Función para mostrar que la voz no está disponible
 function showVoiceUnavailable() {
-  console.log('📢 Función de voz no disponible, deshabilitando micrófono');
+  console.log('📢 VAPI no disponible, intentando grabación nativa...');
+  
+  // Intentar usar grabación nativa del navegador como fallback
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    console.log('🎤 Usando grabación nativa del navegador');
+    setupNativeRecording();
+  } else {
+    console.log('📢 Función de voz no disponible, deshabilitando micrófono');
+    const micButton = document.getElementById('mic-button');
+    if (micButton) {
+      micButton.style.opacity = '0.5';
+      micButton.style.cursor = 'not-allowed';
+      micButton.title = 'Función de voz no disponible en este entorno';
+    }
+  }
+}
+
+// Grabación nativa como fallback
+let mediaRecorder = null;
+let audioChunks = [];
+
+function setupNativeRecording() {
   const micButton = document.getElementById('mic-button');
   if (micButton) {
-    micButton.style.opacity = '0.5';
-    micButton.style.cursor = 'not-allowed';
-    micButton.title = 'Función de voz no disponible en este entorno';
+    micButton.style.opacity = '1';
+    micButton.style.cursor = 'pointer';
+    micButton.title = 'Grabar audio (fallback)';
+  }
+}
+
+async function startNativeRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = (event) => {
+      audioChunks.push(event.data);
+    };
+
+    mediaRecorder.onstop = () => {
+      const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+      appendMessage('Sistema', '🎤 Audio grabado (funcionalidad básica). Para transcripción completa, VAPI necesita estar disponible.');
+      stream.getTracks().forEach(track => track.stop());
+    };
+
+    mediaRecorder.start();
+    isRecording = true;
+    updateMicButton();
+    appendMessage('Sistema', '🎤 Grabando audio...');
+    
+  } catch (error) {
+    console.error('Error al acceder al micrófono:', error);
+    appendMessage('Sistema', '❌ No se pudo acceder al micrófono. Verifica los permisos.');
+  }
+}
+
+function stopNativeRecording() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+    isRecording = false;
+    updateMicButton();
   }
 }
 
@@ -278,17 +334,25 @@ function updateMicButton() {
 
 // Función para el botón del micrófono
 function toggleRecording() {
-  if (!vapi) {
-    console.log('❌ VAPI no disponible para grabación');
-    return;
-  }
-
-  if (!isRecording) {
-    console.log('🎤 Iniciando conversación...');
-    vapi.start("ed7107e6-3fa0-43c7-8440-5bf0d6765a10");
+  if (vapi) {
+    // Usar VAPI si está disponible
+    if (!isRecording) {
+      console.log('🎤 Iniciando conversación VAPI...');
+      vapi.start("ed7107e6-3fa0-43c7-8440-5bf0d6765a10");
+    } else {
+      console.log('⏹️ Deteniendo conversación VAPI...');
+      vapi.stop();
+    }
+  } else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    // Usar grabación nativa como fallback
+    if (!isRecording) {
+      startNativeRecording();
+    } else {
+      stopNativeRecording();
+    }
   } else {
-    console.log('⏹️ Deteniendo conversación...');
-    vapi.stop();
+    console.log('❌ No hay función de grabación disponible');
+    appendMessage('Sistema', '❌ Función de voz no disponible en este entorno');
   }
 }
 
