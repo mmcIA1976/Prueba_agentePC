@@ -150,48 +150,48 @@ let isRecording = false;
 
 function initializeVoiceRecognition() {
   console.log('🎤 Inicializando reconocimiento de voz...');
-  
+
   // Verificar si Web Speech API está disponible
   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRecognition();
-    
+
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'es-ES';
-    
+
     recognition.onstart = () => {
       console.log('🎤 Reconocimiento de voz iniciado');
       isRecording = true;
       updateMicButton();
       appendMessage('Sistema', '🎤 Escuchando... Habla ahora');
     };
-    
+
     recognition.onresult = (event) => {
       let finalTranscript = '';
-      
+
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
           finalTranscript += transcript;
         }
       }
-      
+
       if (finalTranscript.trim()) {
         console.log('📝 Transcripción final:', finalTranscript);
         appendMessage('Tú', finalTranscript.trim());
         saveMessageToDB('Tú', finalTranscript.trim());
-        
+
         // Enviar automáticamente el mensaje transcrito
         sendTranscribedMessage(finalTranscript.trim());
       }
     };
-    
+
     recognition.onerror = (event) => {
       console.error('❌ Error en reconocimiento de voz:', event.error);
       isRecording = false;
       updateMicButton();
-      
+
       let errorMsg = 'Error en el reconocimiento de voz';
       switch(event.error) {
         case 'no-speech':
@@ -206,17 +206,17 @@ function initializeVoiceRecognition() {
       }
       appendMessage('Sistema', `❌ ${errorMsg}`);
     };
-    
+
     recognition.onend = () => {
       console.log('⏹️ Reconocimiento de voz terminado');
       isRecording = false;
       updateMicButton();
       appendMessage('Sistema', '⏹️ Reconocimiento de voz detenido');
     };
-    
+
     console.log('✅ Reconocimiento de voz configurado correctamente');
     setupVoiceButton();
-    
+
   } else {
     console.log('❌ Web Speech API no disponible en este navegador');
     showVoiceUnavailable();
@@ -245,9 +245,9 @@ function showVoiceUnavailable() {
 // Función para enviar mensaje transcrito automáticamente
 async function sendTranscribedMessage(message) {
   if (!message.trim()) return;
-  
+
   showLoadingSpinner();
-  
+
   try {
     console.log('Enviando mensaje transcrito a N8N:', message);
     const response = await fetch(N8N_API_URL, {
@@ -260,19 +260,28 @@ async function sendTranscribedMessage(message) {
         user_name: currentUser ? currentUser.name : 'Usuario'
       })
     });
-    
+
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
     const data = await response.json();
-    
+
     hideLoadingSpinner();
 
-    // Procesar respuesta igual que en el chat normal
+    // --- Compatibilidad con respuesta anidada tipo [{output: { ... }}] ---
     const _out = Array.isArray(data) && data.length && data[0] ? data[0] : data;
+
+    // ---- DEBUGGING: Analizar respuesta para mensaje transcrito ----
+    console.log('🎤 Respuesta para mensaje transcrito:', JSON.stringify(data, null, 2));
 
     // ---- Reproducir audio si viene en la respuesta ----
     if (_out && _out.data && _out.data.startsWith && (_out.data.startsWith('data:audio/mpeg') || _out.data.startsWith('data:audio/mpga'))) {
       console.log('🔊 Reproduciendo audio de respuesta transcrita...');
       playAudioFromData(_out.data);
+    } else if (_out && _out.data) {
+      console.log('❌ Campo "data" encontrado pero no es audio válido:', _out.data.substring(0, 100));
+      appendMessage('Sistema', '❌ Datos recibidos pero no son audio válido');
+    } else {
+      console.log('❌ No hay campo "data" con audio en respuesta transcrita');
+      appendMessage('Sistema', '📝 Solo texto recibido - sin audio');
     }
 
     if (_out && _out.isConfigFinal === true && _out.config_final) {
@@ -292,7 +301,7 @@ async function sendTranscribedMessage(message) {
     if (!_out.respuesta && !_out.config_final && !_out.output) {
       appendMessage('Agente', 'No se recibió respuesta del agente.');
     }
-    
+
   } catch (error) {
     hideLoadingSpinner();
     appendMessage('Agente', `Error de conexión: ${error.message}`);
@@ -303,7 +312,7 @@ async function sendTranscribedMessage(message) {
 function updateMicButton() {
   const micButton = document.getElementById('mic-button');
   if (!micButton) return;
-  
+
   if (isRecording) {
     micButton.textContent = '⏹️';
     micButton.classList.add('recording');
@@ -344,18 +353,18 @@ function toggleRecording() {
 // --- Inicializar la aplicación ---
 document.addEventListener('DOMContentLoaded', () => {
   showLoginScreen();
-  
+
   // Verificar si estamos en el entorno desplegado
   const isDeploy = window.location.hostname.includes('.replit.app') || window.location.hostname.includes('.replit.dev');
   console.log('🌐 Entorno detectado:', isDeploy ? 'Replit Deploy' : 'Replit Preview');
-  
+
   // Event listener para el botón del micrófono
   const micButton = document.getElementById('mic-button');
   if (micButton) {
     micButton.addEventListener('click', toggleRecording);
     updateMicButton(); // Inicial styling
   }
-  
+
   // Inicializar reconocimiento de voz cuando se carga la página
   setTimeout(() => {
     console.log('🚀 Iniciando reconocimiento de voz...');
@@ -477,7 +486,7 @@ function playAudioFromData(audioData) {
   try {
     console.log('🎵 Iniciando reproducción de audio...');
     console.log('📊 Datos de audio recibidos:', audioData.substring(0, 100) + '...');
-    
+
     // Validar que tenemos datos de audio válidos
     if (!audioData || typeof audioData !== 'string') {
       console.error('❌ Datos de audio inválidos:', typeof audioData);
@@ -493,14 +502,14 @@ function playAudioFromData(audioData) {
     }
 
     console.log('✅ Formato de audio detectado:', audioData.substring(0, audioData.indexOf(';')));
-    
+
     // Crear elemento de audio
     const audio = new Audio();
-    
+
     // Configurar el audio
     audio.src = audioData;
     audio.preload = 'auto';
-    
+
     // Crear controles de audio visibles para debugging
     const audioContainer = document.createElement('div');
     audioContainer.className = 'audio-player-container';
@@ -513,29 +522,29 @@ function playAudioFromData(audioData) {
         </audio>
       </div>
     `;
-    
+
     // Añadir controles al chat
     chatLog.appendChild(audioContainer);
     chatLog.scrollTop = chatLog.scrollHeight;
-    
+
     // Manejar eventos de audio
     audio.onloadstart = () => {
       console.log('🔄 Cargando audio...');
     };
-    
+
     audio.oncanplay = () => {
       console.log('✅ Audio listo para reproducir');
       appendMessage('Sistema', '🔊 Audio cargado correctamente - Click en reproducir arriba');
     };
-    
+
     audio.onplay = () => {
       console.log('▶️ Audio iniciado');
     };
-    
+
     audio.onended = () => {
       console.log('⏹️ Audio terminado');
     };
-    
+
     audio.onerror = (error) => {
       console.error('❌ Error reproduciendo audio:', error);
       console.error('❌ Audio error target:', error.target);
@@ -549,7 +558,7 @@ function playAudioFromData(audioData) {
     audio.onloadedmetadata = () => {
       console.log('✅ Metadata de audio cargada - Duración:', audio.duration);
     };
-    
+
     // Intentar reproducción automática (puede fallar por políticas del navegador)
     setTimeout(() => {
       audio.play()
@@ -562,7 +571,7 @@ function playAudioFromData(audioData) {
           appendMessage('Sistema', '⚠️ Reproducción automática bloqueada - Usa los controles de audio arriba');
         });
     }, 500);
-    
+
   } catch (error) {
     console.error('❌ Error en playAudioFromData:', error);
     appendMessage('Sistema', `❌ Error al procesar el audio: ${error.message}`);
@@ -602,4 +611,4 @@ function renderConfiguracion(config_final) {
     html += '</ul></div>';
     configContainer.innerHTML += html;
   });
-} 
+}
