@@ -276,36 +276,35 @@ async function sendTranscribedMessage(message) {
     // ---- DEBUGGING: Verificar respuesta transcrita para audio ----
     console.log('🔍 Analizando respuesta transcrita para audio:', JSON.stringify(_out, null, 2));
     
-    // ---- Reproducir audio si viene en la respuesta ----
-    if (_out && _out.data) {
-      console.log('📊 Campo "data" encontrado en transcripción:', typeof _out.data, _out.data.substring(0, 100));
-      
-      if (typeof _out.data === 'string' && _out.data.startsWith('data:audio/')) {
-        console.log('🔊 Reproduciendo audio de respuesta transcrita...');
-        playAudioFromData(_out.data);
-      } else {
-        console.log('❌ Campo "data" no es audio válido en transcripción');
-        appendMessage('Sistema', '❌ Datos recibidos pero no son audio válido');
-      }
-    } else {
-      console.log('❌ No hay campo "data" con audio en respuesta transcrita');
-      // Verificar otros posibles campos de audio
-      const possibleAudioFields = ['audio', 'audioData', 'sound', 'voice', 'audio_data'];
-      let audioFound = false;
-      possibleAudioFields.forEach(field => {
-        if (_out && _out[field]) {
-          console.log(`🔍 Campo "${field}" encontrado en transcripción:`, typeof _out[field], _out[field].substring(0, 100));
-          if (typeof _out[field] === 'string' && _out[field].startsWith('data:audio/')) {
-            console.log(`🔊 Reproduciendo audio desde campo "${field}" en transcripción...`);
-            playAudioFromData(_out[field]);
-            audioFound = true;
-          }
+    // ---- Reproducir audio si viene en la respuesta (URLs de Google Drive) ----
+    let audioUrl = null;
+    
+    // Buscar URL de audio en diferentes campos
+    const audioFields = ['data', 'audio', 'audioUrl', 'audio_url', 'audioData', 'sound', 'voice', 'audio_data', 'file', 'attachment', 'media'];
+    
+    for (const field of audioFields) {
+      if (_out && _out[field]) {
+        console.log(`📊 Campo "${field}" encontrado en transcripción:`, typeof _out[field], _out[field]);
+        
+        // Verificar si es una URL de Google Drive o cualquier URL de audio
+        if (typeof _out[field] === 'string' && 
+            (_out[field].includes('drive.google.com') || 
+             _out[field].includes('googleusercontent.com') ||
+             _out[field].startsWith('http') ||
+             _out[field].startsWith('data:audio/'))) {
+          audioUrl = _out[field];
+          console.log(`🔊 URL de audio encontrada en transcripción, campo "${field}":`, audioUrl);
+          break;
         }
-      });
-      
-      if (!audioFound) {
-        appendMessage('Sistema', '📝 Solo texto recibido - sin audio');
       }
+    }
+    
+    if (audioUrl) {
+      console.log('🎵 Reproduciendo audio transcrito desde URL...');
+      playAudioFromUrl(audioUrl);
+    } else {
+      console.log('❌ No se encontró URL de audio válida en respuesta transcrita');
+      appendMessage('Sistema', '📝 Solo texto recibido - sin audio');
     }
 
     if (_out && _out.isConfigFinal === true && _out.config_final) {
@@ -493,30 +492,34 @@ if (chatForm) {
         }
       });
       
-      // ---- Reproducir audio si viene en la respuesta ----
-      if (_out && _out.data) {
-        console.log('📊 Campo "data" encontrado:', typeof _out.data, _out.data.substring(0, 100));
-        
-        if (typeof _out.data === 'string' && _out.data.startsWith('data:audio/')) {
-          console.log('🔊 Reproduciendo audio de respuesta...');
-          playAudioFromData(_out.data);
-        } else {
-          console.log('❌ Campo "data" no es audio válido. Tipo:', typeof _out.data);
-          console.log('❌ Primeros 200 caracteres:', _out.data ? _out.data.substring(0, 200) : 'null/undefined');
-        }
-      } else {
-        console.log('❌ No se encontró campo "data" en la respuesta');
-        // Verificar otros posibles campos de audio
-        const possibleAudioFields = ['audio', 'audioData', 'sound', 'voice', 'audio_data'];
-        possibleAudioFields.forEach(field => {
-          if (_out && _out[field]) {
-            console.log(`🔍 Campo "${field}" encontrado:`, typeof _out[field], _out[field].substring(0, 100));
-            if (typeof _out[field] === 'string' && _out[field].startsWith('data:audio/')) {
-              console.log(`🔊 Reproduciendo audio desde campo "${field}"...`);
-              playAudioFromData(_out[field]);
-            }
+      // ---- Reproducir audio si viene en la respuesta (URLs de Google Drive) ----
+      let audioUrl = null;
+      
+      // Buscar URL de audio en diferentes campos
+      const audioFields = ['data', 'audio', 'audioUrl', 'audio_url', 'audioData', 'sound', 'voice', 'audio_data', 'file', 'attachment', 'media'];
+      
+      for (const field of audioFields) {
+        if (_out && _out[field]) {
+          console.log(`📊 Campo "${field}" encontrado:`, typeof _out[field], _out[field]);
+          
+          // Verificar si es una URL de Google Drive o cualquier URL de audio
+          if (typeof _out[field] === 'string' && 
+              (_out[field].includes('drive.google.com') || 
+               _out[field].includes('googleusercontent.com') ||
+               _out[field].startsWith('http') ||
+               _out[field].startsWith('data:audio/'))) {
+            audioUrl = _out[field];
+            console.log(`🔊 URL de audio encontrada en campo "${field}":`, audioUrl);
+            break;
           }
-        });
+        }
+      }
+      
+      if (audioUrl) {
+        console.log('🎵 Reproduciendo audio desde URL...');
+        playAudioFromUrl(audioUrl);
+      } else {
+        console.log('❌ No se encontró URL de audio válida en la respuesta');
       }
 
       // ---- Mostrar configuración final solo si corresponde ----
@@ -591,158 +594,130 @@ function hideLoadingSpinner() {
   }
 }
 
-// --- REPRODUCIR AUDIO DESDE DATA CON FALLBACK HTML5 ---
-function playAudioFromData(audioData) {
+// --- REPRODUCIR AUDIO DESDE URL (Google Drive, etc.) ---
+function playAudioFromUrl(audioUrl) {
   try {
-    console.log('🎵 Iniciando reproducción de audio...');
-    console.log('📊 Longitud de datos:', audioData ? audioData.length : 0);
+    console.log('🎵 Iniciando reproducción de audio desde URL...');
+    console.log('📊 URL de audio:', audioUrl);
 
-    // Validar que tenemos datos de audio válidos
-    if (!audioData || typeof audioData !== 'string') {
-      console.error('❌ Datos de audio inválidos:', typeof audioData);
-      appendMessage('Sistema', '❌ Datos de audio inválidos');
+    // Validar que tenemos una URL válida
+    if (!audioUrl || typeof audioUrl !== 'string') {
+      console.error('❌ URL de audio inválida:', typeof audioUrl);
+      appendMessage('Sistema', '❌ URL de audio inválida');
       return;
     }
 
-    // Verificar si es un data URL válido
-    if (!audioData.startsWith('data:audio/')) {
-      console.error('❌ No es un data URL de audio válido');
-      appendMessage('Sistema', '❌ Formato de audio no válido');
-      return;
+    // Convertir URL de Google Drive si es necesario
+    let finalUrl = audioUrl;
+    if (audioUrl.includes('drive.google.com/file/d/')) {
+      const fileId = audioUrl.match(/\/file\/d\/([a-zA-Z0-9-_]+)/);
+      if (fileId) {
+        finalUrl = `https://drive.google.com/uc?export=download&id=${fileId[1]}`;
+        console.log('🔧 URL de Google Drive convertida:', finalUrl);
+      }
     }
 
-    console.log('✅ Formato de audio detectado:', audioData.substring(5, audioData.indexOf(';')));
-
-    // Crear controles de audio HTML5 (más compatible con MP3)
+    // Crear elemento de audio simple que se reproduce automáticamente
+    const audioId = 'audio_' + Date.now();
+    
     const audioContainer = document.createElement('div');
     audioContainer.className = 'audio-player-container';
-    
-    const audioId = 'audio_' + Date.now();
-    const sizeKB = Math.round((audioData.length * 0.75) / 1024); // Estimación del tamaño
-    
     audioContainer.innerHTML = `
-      <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 10px 0; border: 2px solid #4CAF50;">
-        🔊 <strong>Respuesta de Audio:</strong><br>
-        <div style="margin: 10px 0;">
-          <audio id="html-audio-${audioId}" controls style="width: 100%; max-width: 400px;">
-            <source src="${audioData}" type="audio/mpeg">
-            Tu navegador no soporta el elemento de audio.
-          </audio>
-        </div>
-        <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
-          <button id="play-btn-${audioId}" onclick="playHtmlAudio('${audioId}')" 
-                  style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
-            ▶️ Reproducir
-          </button>
-          <button id="pause-btn-${audioId}" onclick="pauseHtmlAudio('${audioId}')" 
-                  style="background: #ff9500; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
-            ⏸️ Pausar
-          </button>
-          <button id="stop-btn-${audioId}" onclick="stopHtmlAudio('${audioId}')" 
-                  style="background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
-            ⏹️ Detener
-          </button>
-          <div id="status-${audioId}" style="margin-left: 10px; font-size: 12px; color: #666;">
-            Listo para reproducir
-          </div>
-        </div>
-        <div style="margin-top: 8px; font-size: 12px; color: #666;">
-          Formato: MP3 | Tamaño: ~${sizeKB}KB
-        </div>
+      <div style="background: #e8f5e8; padding: 10px; border-radius: 8px; margin: 10px 0; border: 2px solid #4CAF50;">
+        🔊 <strong>Respuesta de Audio:</strong> <span id="status-${audioId}">Cargando...</span>
+        <audio id="audio-${audioId}" controls autoplay style="width: 100%; margin-top: 8px;">
+          <source src="${finalUrl}" type="audio/mpeg">
+          <source src="${finalUrl}" type="audio/mp3">
+          Tu navegador no soporta el elemento de audio.
+        </audio>
       </div>
     `;
 
-    // Añadir controles al chat
+    // Añadir al chat
     chatLog.appendChild(audioContainer);
     chatLog.scrollTop = chatLog.scrollHeight;
 
-    // Crear funciones globales para control de HTML5 Audio
-    window.playHtmlAudio = function(audioId) {
-      try {
-        const audio = document.getElementById(`html-audio-${audioId}`);
-        const status = document.getElementById(`status-${audioId}`);
-        
-        if (!audio) {
-          console.error('❌ Elemento de audio no encontrado');
-          return;
-        }
-
-        status.textContent = 'Reproduciendo...';
-        
-        audio.play().then(() => {
-          console.log('✅ Reproducción iniciada con HTML5 Audio');
-          appendMessage('Sistema', '🎵 ¡Audio reproduciéndose correctamente!');
-        }).catch(error => {
-          console.error('❌ Error al reproducir HTML5 Audio:', error);
-          status.textContent = `Error: ${error.message}`;
-          appendMessage('Sistema', `❌ Error de reproducción: ${error.message}`);
-        });
-        
-      } catch (error) {
-        console.error('❌ Error en playHtmlAudio:', error);
-        appendMessage('Sistema', `❌ Error al controlar audio: ${error.message}`);
-      }
-    };
-
-    window.pauseHtmlAudio = function(audioId) {
-      try {
-        const audio = document.getElementById(`html-audio-${audioId}`);
-        const status = document.getElementById(`status-${audioId}`);
-        
-        if (audio) {
-          audio.pause();
-          status.textContent = 'Pausado';
-          console.log('⏸️ Audio pausado');
-        }
-      } catch (error) {
-        console.error('❌ Error al pausar audio:', error);
-      }
-    };
-
-    window.stopHtmlAudio = function(audioId) {
-      try {
-        const audio = document.getElementById(`html-audio-${audioId}`);
-        const status = document.getElementById(`status-${audioId}`);
-        
-        if (audio) {
-          audio.pause();
-          audio.currentTime = 0;
-          status.textContent = 'Detenido';
-          console.log('⏹️ Audio detenido');
-        }
-      } catch (error) {
-        console.error('❌ Error al detener audio:', error);
-      }
-    };
-
-    // Configurar eventos del elemento audio
-    const audioElement = document.getElementById(`html-audio-${audioId}`);
+    // Configurar eventos del audio
+    const audioElement = document.getElementById(`audio-${audioId}`);
+    const statusElement = document.getElementById(`status-${audioId}`);
+    
     if (audioElement) {
-      audioElement.addEventListener('loadeddata', () => {
-        console.log('✅ Audio cargado correctamente');
-        document.getElementById(`status-${audioId}`).textContent = 'Audio cargado - Listo';
+      audioElement.addEventListener('loadstart', () => {
+        console.log('🔄 Comenzando a cargar audio...');
+        statusElement.textContent = 'Cargando audio...';
       });
 
-      audioElement.addEventListener('error', (e) => {
-        console.error('❌ Error cargando audio:', e);
-        document.getElementById(`status-${audioId}`).textContent = 'Error al cargar audio';
-        appendMessage('Sistema', '❌ Error al cargar el audio. Verifica el formato.');
+      audioElement.addEventListener('canplay', () => {
+        console.log('✅ Audio listo para reproducir');
+        statusElement.textContent = 'Reproduciendo automáticamente...';
+        
+        // Intentar reproducción automática
+        audioElement.play().then(() => {
+          console.log('✅ Reproducción automática iniciada');
+          appendMessage('Sistema', '🎵 ¡Audio reproduciéndose automáticamente!');
+        }).catch(error => {
+          console.error('❌ Error en reproducción automática:', error);
+          statusElement.textContent = 'Haz clic en play para reproducir';
+          appendMessage('Sistema', '▶️ Audio listo - Haz clic en play para reproducir');
+        });
+      });
+
+      audioElement.addEventListener('play', () => {
+        console.log('▶️ Audio comenzó a reproducirse');
+        statusElement.textContent = 'Reproduciendo...';
+      });
+
+      audioElement.addEventListener('pause', () => {
+        console.log('⏸️ Audio pausado');
+        statusElement.textContent = 'Pausado';
       });
 
       audioElement.addEventListener('ended', () => {
         console.log('🏁 Reproducción terminada');
-        document.getElementById(`status-${audioId}`).textContent = 'Reproducción completada';
+        statusElement.textContent = 'Reproducción completada';
+      });
+
+      audioElement.addEventListener('error', (e) => {
+        console.error('❌ Error cargando audio:', e);
+        statusElement.textContent = 'Error al cargar audio';
+        appendMessage('Sistema', '❌ Error al cargar el audio. Verifica la URL.');
       });
     }
 
-    // Intentar reproducción automática después de un breve delay
-    setTimeout(() => {
-      console.log('🚀 Intentando reproducción automática...');
-      window.playHtmlAudio(audioId);
-    }, 1000);
+    appendMessage('Sistema', '🔊 Audio de Google Drive cargado - Reproduciéndose automáticamente...');
 
-    appendMessage('Sistema', '🔊 Audio procesado con HTML5 - Reproduciendo automáticamente...');
+  } catch (error) {
+    console.error('❌ Error en playAudioFromUrl:', error);
+    appendMessage('Sistema', `❌ Error al procesar el audio: ${error.message}`);
+  }
+}
 
+// Mantener la función anterior para compatibilidad con base64
+function playAudioFromData(audioData) {
+  // Si es una URL, usar la nueva función
+  if (audioData && typeof audioData === 'string' && audioData.startsWith('http')) {
+    playAudioFromUrl(audioData);
+    return;
+  }
+  
+  // Si es base64, procesarlo como antes pero simplificado
+  try {
+    console.log('🎵 Reproduciendo audio base64...');
+    const audioId = 'audio_' + Date.now();
+    
+    const audioContainer = document.createElement('div');
+    audioContainer.innerHTML = `
+      <div style="background: #e8f5e8; padding: 10px; border-radius: 8px; margin: 10px 0; border: 2px solid #4CAF50;">
+        🔊 <strong>Respuesta de Audio:</strong>
+        <audio controls autoplay style="width: 100%; margin-top: 8px;">
+          <source src="${audioData}" type="audio/mpeg">
+        </audio>
+      </div>
+    `;
+    
+    chatLog.appendChild(audioContainer);
+    chatLog.scrollTop = chatLog.scrollHeight;
+    
   } catch (error) {
     console.error('❌ Error en playAudioFromData:', error);
     appendMessage('Sistema', `❌ Error al procesar el audio: ${error.message}`);
