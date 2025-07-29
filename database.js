@@ -1,6 +1,5 @@
-
+// database.js
 const Database = require('better-sqlite3');
-const path = require('path');
 
 class ConfiguradorDB {
   constructor() {
@@ -12,8 +11,8 @@ class ConfiguradorDB {
     // Tabla de usuarios
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY,
-        replit_id INTEGER UNIQUE NOT NULL,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        replit_id TEXT UNIQUE NOT NULL,
         username TEXT NOT NULL,
         email TEXT,
         profile_image TEXT,
@@ -83,30 +82,49 @@ class ConfiguradorDB {
     `);
   }
 
-  // Métodos para usuarios
+  // --- USUARIOS ---
+
+  // Crear o actualizar usuario usando replit_id (único)
   createUser(replitUser) {
     const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO users (replit_id, username, email, profile_image, last_login)
+      INSERT INTO users (replit_id, username, email, profile_image, last_login)
       VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(replit_id) DO UPDATE SET
+        username = excluded.username,
+        email = excluded.email,
+        profile_image = excluded.profile_image,
+        last_login = CURRENT_TIMESTAMP
     `);
     return stmt.run(replitUser.id, replitUser.name, replitUser.email, replitUser.profileImage);
   }
 
-  getUser(replitId) {
+  // Buscar usuario por replit_id (¡USAR ESTO EN TODOS LOS FLUJOS!)
+  getUserByReplitId(replitId) {
     const stmt = this.db.prepare('SELECT * FROM users WHERE replit_id = ?');
     return stmt.get(replitId);
   }
 
-  // Métodos para chats
-  createChat(chatId, userId, title = 'Nueva conversación') {
+  // Buscar usuario por id interno (solo si hace falta)
+  getUserById(id) {
+    const stmt = this.db.prepare('SELECT * FROM users WHERE id = ?');
+    return stmt.get(id);
+  }
+
+  // --- CHATS ---
+
+  createChat(chatId, replitId, title = 'Nueva conversación') {
+    const user = this.getUserByReplitId(replitId);
+    if (!user) throw new Error('Usuario no encontrado');
     const stmt = this.db.prepare(`
       INSERT OR IGNORE INTO chats (chat_id, user_id, title)
       VALUES (?, ?, ?)
     `);
-    return stmt.run(chatId, userId, title);
+    return stmt.run(chatId, user.id, title);
   }
 
-  getUserChats(userId) {
+  getUserChats(replitId) {
+    const user = this.getUserByReplitId(replitId);
+    if (!user) return [];
     const stmt = this.db.prepare(`
       SELECT c.*, COUNT(m.id) as message_count
       FROM chats c
@@ -115,21 +133,21 @@ class ConfiguradorDB {
       GROUP BY c.id
       ORDER BY c.updated_at DESC
     `);
-    return stmt.all(userId);
+    return stmt.all(user.id);
   }
 
-  // Métodos para mensajes
+  // --- MENSAJES ---
+
   saveMessage(chatId, author, content, messageType = 'text') {
     const stmt = this.db.prepare(`
       INSERT INTO messages (chat_id, author, content, message_type)
       VALUES (?, ?, ?, ?)
     `);
-    
-    // Actualizar timestamp del chat
+
     const updateChat = this.db.prepare(`
       UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE chat_id = ?
     `);
-    
+
     const result = stmt.run(chatId, author, content, messageType);
     updateChat.run(chatId);
     return result;
@@ -142,51 +160,63 @@ class ConfiguradorDB {
     return stmt.all(chatId);
   }
 
-  // Métodos para configuraciones
-  saveConfiguration(userId, chatId, title, components, totalPrice) {
+  // --- CONFIGURACIONES ---
+
+  saveConfiguration(replitId, chatId, title, components, totalPrice) {
+    const user = this.getUserByReplitId(replitId);
+    if (!user) throw new Error('Usuario no encontrado');
     const stmt = this.db.prepare(`
       INSERT INTO configurations (user_id, chat_id, title, components, total_price)
       VALUES (?, ?, ?, ?, ?)
     `);
-    return stmt.run(userId, chatId, title, JSON.stringify(components), totalPrice);
+    return stmt.run(user.id, chatId, title, JSON.stringify(components), totalPrice);
   }
 
-  getUserConfigurations(userId) {
+  getUserConfigurations(replitId) {
+    const user = this.getUserByReplitId(replitId);
+    if (!user) return [];
     const stmt = this.db.prepare(`
       SELECT * FROM configurations WHERE user_id = ? ORDER BY created_at DESC
     `);
-    return stmt.all(userId).map(config => ({
+    return stmt.all(user.id).map(config => ({
       ...config,
       components: JSON.parse(config.components)
     }));
   }
 
-  // Métodos para wishlist
-  addToWishlist(userId, componentName, componentData, priceAlert = null) {
+  // --- WISHLIST ---
+
+  addToWishlist(replitId, componentName, componentData, priceAlert = null) {
+    const user = this.getUserByReplitId(replitId);
+    if (!user) throw new Error('Usuario no encontrado');
     const stmt = this.db.prepare(`
       INSERT INTO wishlist (user_id, component_name, component_data, price_alert)
       VALUES (?, ?, ?, ?)
     `);
-    return stmt.run(userId, componentName, JSON.stringify(componentData), priceAlert);
+    return stmt.run(user.id, componentName, JSON.stringify(componentData), priceAlert);
   }
 
-  getUserWishlist(userId) {
+  getUserWishlist(replitId) {
+    const user = this.getUserByReplitId(replitId);
+    if (!user) return [];
     const stmt = this.db.prepare(`
       SELECT * FROM wishlist WHERE user_id = ? ORDER BY created_at DESC
     `);
-    return stmt.all(userId).map(item => ({
+    return stmt.all(user.id).map(item => ({
       ...item,
       component_data: JSON.parse(item.component_data)
     }));
   }
 
-  // Dashboard data
-  getUserDashboardData(userId) {
-    const user = this.getUser(userId);
-    const chats = this.getUserChats(userId).slice(0, 5); // Últimos 5 chats
-    const configurations = this.getUserConfigurations(userId).slice(0, 3); // Últimas 3 configs
-    const wishlistCount = this.getUserWishlist(userId).length;
-    
+  // --- DASHBOARD ---
+
+  getUserDashboardData(replitId) {
+    const user = this.getUserByReplitId(replitId);
+    if (!user) return {};
+    const chats = this.getUserChats(replitId).slice(0, 5); // Últimos 5 chats
+    const configurations = this.getUserConfigurations(replitId).slice(0, 3); // Últimas 3 configs
+    const wishlistCount = this.getUserWishlist(replitId).length;
+
     return {
       user,
       recent_chats: chats,
