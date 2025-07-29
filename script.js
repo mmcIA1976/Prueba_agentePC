@@ -374,105 +374,112 @@ function toggleRecording() {
 // --- Función única y confiable para reproducir audio ---
 function playAudioReliable(audioData) {
   try {
-    console.log('🎵 Reproduciendo audio...', typeof audioData);
+    console.log('🎵 Reproduciendo audio desde N8N:', typeof audioData);
+    console.log('📊 Longitud total del audio:', audioData.length);
+    console.log('📊 Primeros 100 caracteres:', audioData.substring(0, 100));
     
-    const audioId = 'audio_' + Date.now();
+    // Crear elemento de audio dinámico
+    const audioId = 'response_audio_' + Date.now();
     const audioContainer = document.createElement('div');
     audioContainer.className = 'audio-response-container';
+    
     audioContainer.innerHTML = `
-      <div style="background: #e3f2fd; padding: 15px; border-radius: 12px; margin: 15px 0; border-left: 4px solid #2196F3; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-        🔊 <strong>Respuesta de Audio</strong> 
-        <div id="status-${audioId}" style="color: #666; font-size: 14px; margin: 5px 0;">Cargando...</div>
-        <audio id="audio-${audioId}" controls preload="metadata" style="width: 100%; margin-top: 10px; height: 45px;">
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 15px; margin: 15px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+          <span style="font-size: 1.5em;">🔊</span>
+          <strong style="font-size: 1.1em;">Respuesta de Audio desde N8N</strong>
+        </div>
+        <div id="status-${audioId}" style="color: #e8f5e8; font-size: 14px; margin-bottom: 10px;">Preparando audio...</div>
+        <audio id="audio-${audioId}" controls preload="auto" style="width: 100%; height: 50px; border-radius: 8px; background: rgba(255,255,255,0.1);" autoplay>
           <source src="${audioData}" type="audio/mpeg">
           <source src="${audioData}" type="audio/mp3">
           <source src="${audioData}" type="audio/wav">
-          Tu navegador no soporta audio HTML5.
+          <source src="${audioData}" type="audio/ogg">
+          Tu navegador no soporta la reproducción de audio.
         </audio>
-        <div style="font-size: 12px; color: #999; margin-top: 5px;">Haz clic en ▶️ para reproducir</div>
+        <div style="font-size: 12px; color: #b8d4ff; margin-top: 8px; text-align: center;">
+          ▶️ Reproducción automática habilitada | 🔧 Si no suena, haz clic en ▶️
+        </div>
       </div>
     `;
 
+    // Agregar al chat
     chatLog.appendChild(audioContainer);
     chatLog.scrollTop = chatLog.scrollHeight;
 
+    // Configurar elemento de audio
     const audioElement = document.getElementById(`audio-${audioId}`);
     const statusElement = document.getElementById(`status-${audioId}`);
     
-    if (audioElement && statusElement) {
-      
-      audioElement.addEventListener('loadstart', () => {
-        console.log('🔄 Cargando audio...');
-        statusElement.textContent = 'Cargando audio...';
-        statusElement.style.color = '#666';
-      });
-
-      audioElement.addEventListener('loadedmetadata', () => {
-        console.log('📊 Metadatos cargados');
-        statusElement.textContent = 'Audio listo';
-        statusElement.style.color = '#4CAF50';
-      });
-
-      audioElement.addEventListener('canplaythrough', () => {
-        console.log('✅ Audio completamente cargado');
-        statusElement.textContent = 'Listo para reproducir';
-        statusElement.style.color = '#2196F3';
-        
-        // Intentar reproducción automática una sola vez
-        setTimeout(() => {
-          const playPromise = audioElement.play();
-          if (playPromise !== undefined) {
-            playPromise.then(() => {
-              console.log('✅ Reproducción automática exitosa');
-              statusElement.textContent = 'Reproduciendo automáticamente...';
-            }).catch(error => {
-              console.log('⚠️ Autoplay bloqueado por el navegador:', error.message);
-              statusElement.textContent = 'Haz clic en ▶️ para reproducir';
-              statusElement.style.color = '#ff9800';
-            });
-          }
-        }, 100);
-      });
-
-      audioElement.addEventListener('play', () => {
-        console.log('▶️ Reproducción iniciada');
-        statusElement.textContent = 'Reproduciendo...';
-        statusElement.style.color = '#4CAF50';
-      });
-
-      audioElement.addEventListener('pause', () => {
-        console.log('⏸️ Audio pausado');
-        statusElement.textContent = 'Pausado';
-      });
-
-      audioElement.addEventListener('ended', () => {
-        console.log('🏁 Reproducción completada');
-        statusElement.textContent = 'Reproducción completada ✅';
-        statusElement.style.color = '#4CAF50';
-      });
-
-      audioElement.addEventListener('error', (e) => {
-        console.error('❌ Error de audio:', e);
-        console.error('❌ Detalles del error:', audioElement.error);
-        let errorMsg = 'Error desconocido';
-        if (audioElement.error) {
-          switch(audioElement.error.code) {
-            case 1: errorMsg = 'Descarga abortada'; break;
-            case 2: errorMsg = 'Error de red'; break;
-            case 3: errorMsg = 'Error de decodificación'; break;
-            case 4: errorMsg = 'Formato no soportado'; break;
-          }
-        }
-        statusElement.textContent = `❌ ${errorMsg}`;
-        statusElement.style.color = '#f44336';
-      });
-
-      // Intentar cargar el audio
-      audioElement.load();
+    if (!audioElement || !statusElement) {
+      console.error('❌ No se pudieron crear los elementos de audio');
+      return;
     }
 
+    // Event listeners para monitoreo
+    audioElement.addEventListener('loadstart', () => {
+      console.log('🔄 Iniciando carga de audio...');
+      statusElement.textContent = '🔄 Cargando audio desde N8N...';
+    });
+
+    audioElement.addEventListener('loadeddata', () => {
+      console.log('📊 Datos de audio cargados');
+      statusElement.textContent = '📊 Audio cargado - Listo para reproducir';
+    });
+
+    audioElement.addEventListener('canplay', () => {
+      console.log('✅ Audio listo para reproducir');
+      statusElement.textContent = '✅ Audio listo - Reproduciendo...';
+      
+      // Forzar reproducción
+      const playPromise = audioElement.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log('🎵 Reproducción automática EXITOSA');
+            statusElement.textContent = '🎵 Reproduciendo respuesta de N8N...';
+          })
+          .catch(error => {
+            console.log('⚠️ Autoplay bloqueado:', error.message);
+            statusElement.textContent = '⚠️ Haz clic en ▶️ para escuchar la respuesta';
+          });
+      }
+    });
+
+    audioElement.addEventListener('play', () => {
+      console.log('▶️ Reproducción iniciada');
+      statusElement.textContent = '▶️ Reproduciendo audio...';
+    });
+
+    audioElement.addEventListener('ended', () => {
+      console.log('🏁 Reproducción completada');
+      statusElement.textContent = '🏁 Reproducción completada ✅';
+    });
+
+    audioElement.addEventListener('error', (e) => {
+      console.error('❌ Error de audio:', e);
+      console.error('❌ Código de error:', audioElement.error?.code);
+      console.error('❌ Mensaje de error:', audioElement.error?.message);
+      
+      let errorMsg = 'Error desconocido';
+      if (audioElement.error) {
+        switch(audioElement.error.code) {
+          case 1: errorMsg = 'Descarga abortada por el usuario'; break;
+          case 2: errorMsg = 'Error de red al descargar'; break;
+          case 3: errorMsg = 'Error de decodificación del audio'; break;
+          case 4: errorMsg = 'Formato de audio no soportado'; break;
+        }
+      }
+      statusElement.textContent = `❌ ${errorMsg}`;
+      statusElement.style.color = '#ffcccb';
+    });
+
+    // Forzar carga del audio
+    console.log('🚀 Forzando carga del audio...');
+    audioElement.load();
+
   } catch (error) {
-    console.error('❌ Error en playAudioReliable:', error);
+    console.error('❌ Error crítico en playAudioReliable:', error);
     appendMessage('Sistema', `❌ Error al procesar audio: ${error.message}`);
   }
 }
