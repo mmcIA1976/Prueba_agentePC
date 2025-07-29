@@ -272,16 +272,39 @@ async function sendTranscribedMessage(message) {
     // ---- DEBUGGING: Analizar respuesta para mensaje transcrito ----
     console.log('🎤 Respuesta para mensaje transcrito:', JSON.stringify(data, null, 2));
 
+    // ---- DEBUGGING: Verificar respuesta transcrita para audio ----
+    console.log('🔍 Analizando respuesta transcrita para audio:', JSON.stringify(_out, null, 2));
+    
     // ---- Reproducir audio si viene en la respuesta ----
-    if (_out && _out.data && _out.data.startsWith && (_out.data.startsWith('data:audio/mpeg') || _out.data.startsWith('data:audio/mpga'))) {
-      console.log('🔊 Reproduciendo audio de respuesta transcrita...');
-      playAudioFromData(_out.data);
-    } else if (_out && _out.data) {
-      console.log('❌ Campo "data" encontrado pero no es audio válido:', _out.data.substring(0, 100));
-      appendMessage('Sistema', '❌ Datos recibidos pero no son audio válido');
+    if (_out && _out.data) {
+      console.log('📊 Campo "data" encontrado en transcripción:', typeof _out.data, _out.data.substring(0, 100));
+      
+      if (typeof _out.data === 'string' && _out.data.startsWith('data:audio/')) {
+        console.log('🔊 Reproduciendo audio de respuesta transcrita...');
+        playAudioFromData(_out.data);
+      } else {
+        console.log('❌ Campo "data" no es audio válido en transcripción');
+        appendMessage('Sistema', '❌ Datos recibidos pero no son audio válido');
+      }
     } else {
       console.log('❌ No hay campo "data" con audio en respuesta transcrita');
-      appendMessage('Sistema', '📝 Solo texto recibido - sin audio');
+      // Verificar otros posibles campos de audio
+      const possibleAudioFields = ['audio', 'audioData', 'sound', 'voice', 'audio_data'];
+      let audioFound = false;
+      possibleAudioFields.forEach(field => {
+        if (_out && _out[field]) {
+          console.log(`🔍 Campo "${field}" encontrado en transcripción:`, typeof _out[field], _out[field].substring(0, 100));
+          if (typeof _out[field] === 'string' && _out[field].startsWith('data:audio/')) {
+            console.log(`🔊 Reproduciendo audio desde campo "${field}" en transcripción...`);
+            playAudioFromData(_out[field]);
+            audioFound = true;
+          }
+        }
+      });
+      
+      if (!audioFound) {
+        appendMessage('Sistema', '📝 Solo texto recibido - sin audio');
+      }
     }
 
     if (_out && _out.isConfigFinal === true && _out.config_final) {
@@ -403,10 +426,33 @@ if (chatForm) {
       // --- Compatibilidad con respuesta anidada tipo [{output: { ... }}] ---
       const _out = Array.isArray(data) && data.length && data[0] ? data[0] : data;
 
+      // ---- DEBUGGING: Verificar todos los campos de la respuesta ----
+      console.log('🔍 Analizando respuesta completa para audio:', JSON.stringify(_out, null, 2));
+      
       // ---- Reproducir audio si viene en la respuesta ----
-      if (_out && _out.data && _out.data.startsWith && (_out.data.startsWith('data:audio/mpeg') || _out.data.startsWith('data:audio/mpga'))) {
-        console.log('🔊 Reproduciendo audio de respuesta...');
-        playAudioFromData(_out.data);
+      if (_out && _out.data) {
+        console.log('📊 Campo "data" encontrado:', typeof _out.data, _out.data.substring(0, 100));
+        
+        if (typeof _out.data === 'string' && _out.data.startsWith('data:audio/')) {
+          console.log('🔊 Reproduciendo audio de respuesta...');
+          playAudioFromData(_out.data);
+        } else {
+          console.log('❌ Campo "data" no es audio válido. Tipo:', typeof _out.data);
+          console.log('❌ Primeros 200 caracteres:', _out.data ? _out.data.substring(0, 200) : 'null/undefined');
+        }
+      } else {
+        console.log('❌ No se encontró campo "data" en la respuesta');
+        // Verificar otros posibles campos de audio
+        const possibleAudioFields = ['audio', 'audioData', 'sound', 'voice', 'audio_data'];
+        possibleAudioFields.forEach(field => {
+          if (_out && _out[field]) {
+            console.log(`🔍 Campo "${field}" encontrado:`, typeof _out[field], _out[field].substring(0, 100));
+            if (typeof _out[field] === 'string' && _out[field].startsWith('data:audio/')) {
+              console.log(`🔊 Reproduciendo audio desde campo "${field}"...`);
+              playAudioFromData(_out[field]);
+            }
+          }
+        });
       }
 
       // ---- Mostrar configuración final solo si corresponde ----
@@ -485,7 +531,8 @@ function hideLoadingSpinner() {
 function playAudioFromData(audioData) {
   try {
     console.log('🎵 Iniciando reproducción de audio...');
-    console.log('📊 Datos de audio recibidos:', audioData.substring(0, 100) + '...');
+    console.log('📊 Longitud de datos:', audioData ? audioData.length : 0);
+    console.log('📊 Primeros 200 caracteres:', audioData ? audioData.substring(0, 200) : 'null');
 
     // Validar que tenemos datos de audio válidos
     if (!audioData || typeof audioData !== 'string') {
@@ -496,81 +543,68 @@ function playAudioFromData(audioData) {
 
     // Verificar si es un data URL válido
     if (!audioData.startsWith('data:audio/')) {
-      console.error('❌ No es un data URL de audio válido:', audioData.substring(0, 50));
+      console.error('❌ No es un data URL de audio válido');
+      console.error('❌ Datos recibidos:', audioData.substring(0, 100));
       appendMessage('Sistema', '❌ Formato de audio no válido');
       return;
     }
 
-    console.log('✅ Formato de audio detectado:', audioData.substring(0, audioData.indexOf(';')));
+    const mimeType = audioData.substring(5, audioData.indexOf(';'));
+    console.log('✅ Formato de audio detectado:', mimeType);
 
-    // Crear elemento de audio
-    const audio = new Audio();
-
-    // Configurar el audio
-    audio.src = audioData;
-    audio.preload = 'auto';
-
-    // Crear controles de audio visibles para debugging
+    // Crear controles de audio visibles PRIMERO
     const audioContainer = document.createElement('div');
     audioContainer.className = 'audio-player-container';
     audioContainer.innerHTML = `
-      <div style="background: #f0f0f0; padding: 10px; border-radius: 8px; margin: 10px 0;">
-        🔊 <strong>Audio de respuesta:</strong>
-        <audio controls style="width: 100%; margin-top: 5px;">
-          <source src="${audioData}" type="audio/mpeg">
-          Tu navegador no soporta audio.
+      <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 10px 0; border: 2px solid #4CAF50;">
+        🔊 <strong>Respuesta de Audio:</strong><br>
+        <audio controls preload="auto" style="width: 100%; margin-top: 8px; height: 40px;">
+          <source src="${audioData}" type="${mimeType}">
+          Tu navegador no soporta la reproducción de audio.
         </audio>
+        <div style="margin-top: 8px; font-size: 12px; color: #666;">
+          Formato: ${mimeType} | Tamaño: ${Math.round(audioData.length / 1024)}KB
+        </div>
       </div>
     `;
 
-    // Añadir controles al chat
+    // Añadir controles al chat INMEDIATAMENTE
     chatLog.appendChild(audioContainer);
     chatLog.scrollTop = chatLog.scrollHeight;
 
-    // Manejar eventos de audio
-    audio.onloadstart = () => {
-      console.log('🔄 Cargando audio...');
-    };
+    // Crear elemento de audio para reproducción automática
+    const audio = new Audio();
+    audio.src = audioData;
+    audio.preload = 'auto';
 
+    // Eventos de audio
     audio.oncanplay = () => {
       console.log('✅ Audio listo para reproducir');
-      appendMessage('Sistema', '🔊 Audio cargado correctamente - Click en reproducir arriba');
-    };
-
-    audio.onplay = () => {
-      console.log('▶️ Audio iniciado');
-    };
-
-    audio.onended = () => {
-      console.log('⏹️ Audio terminado');
+      appendMessage('Sistema', '🔊 Audio cargado - Reproduciendo automáticamente...');
+      
+      // Intentar reproducción automática después de un breve delay
+      setTimeout(() => {
+        audio.play()
+          .then(() => {
+            console.log('✅ Reproducción automática exitosa');
+            appendMessage('Sistema', '▶️ Reproduciendo audio automáticamente');
+          })
+          .catch(error => {
+            console.warn('⚠️ Reproducción automática bloqueada:', error.message);
+            appendMessage('Sistema', '⚠️ Usa los controles de audio de arriba para reproducir');
+          });
+      }, 200);
     };
 
     audio.onerror = (error) => {
       console.error('❌ Error reproduciendo audio:', error);
-      console.error('❌ Audio error target:', error.target);
-      appendMessage('Sistema', `❌ Error al reproducir audio: ${error.target?.error || 'Desconocido'}`);
+      appendMessage('Sistema', `❌ Error al reproducir audio. Verifica el formato.`);
     };
 
-    audio.onloadeddata = () => {
-      console.log('✅ Datos de audio cargados correctamente');
+    audio.onended = () => {
+      console.log('⏹️ Audio terminado');
+      appendMessage('Sistema', '⏹️ Reproducción de audio completada');
     };
-
-    audio.onloadedmetadata = () => {
-      console.log('✅ Metadata de audio cargada - Duración:', audio.duration);
-    };
-
-    // Intentar reproducción automática (puede fallar por políticas del navegador)
-    setTimeout(() => {
-      audio.play()
-        .then(() => {
-          console.log('✅ Reproducción automática exitosa');
-          appendMessage('Sistema', '▶️ Reproduciendo audio automáticamente');
-        })
-        .catch(error => {
-          console.warn('⚠️ Reproducción automática bloqueada:', error.message);
-          appendMessage('Sistema', '⚠️ Reproducción automática bloqueada - Usa los controles de audio arriba');
-        });
-    }, 500);
 
   } catch (error) {
     console.error('❌ Error en playAudioFromData:', error);
