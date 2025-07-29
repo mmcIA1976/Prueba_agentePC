@@ -300,7 +300,7 @@ async function sendTranscribedMessage(message) {
     
     if (audioUrl) {
       console.log('🎵 Reproduciendo audio transcrito...');
-      playSimpleAudio(audioUrl);
+      playAudioReliable(audioUrl);
     } else {
       console.log('❌ No se encontró audio válido en respuesta transcrita');
     }
@@ -371,22 +371,25 @@ function toggleRecording() {
   }
 }
 
-// --- Función simplificada para reproducir audio ---
-function playSimpleAudio(audioData) {
+// --- Función única y confiable para reproducir audio ---
+function playAudioReliable(audioData) {
   try {
-    console.log('🎵 Reproduciendo audio con método simplificado...');
+    console.log('🎵 Reproduciendo audio...', typeof audioData);
     
     const audioId = 'audio_' + Date.now();
     const audioContainer = document.createElement('div');
     audioContainer.className = 'audio-response-container';
     audioContainer.innerHTML = `
-      <div style="background: #e8f5e8; padding: 12px; border-radius: 8px; margin: 10px 0; border: 2px solid #4CAF50;">
-        🔊 <strong>Respuesta de Audio</strong> <span id="status-${audioId}" style="color: #666;">Preparando...</span>
-        <audio id="audio-${audioId}" controls preload="auto" style="width: 100%; margin-top: 8px;">
+      <div style="background: #e3f2fd; padding: 15px; border-radius: 12px; margin: 15px 0; border-left: 4px solid #2196F3; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        🔊 <strong>Respuesta de Audio</strong> 
+        <div id="status-${audioId}" style="color: #666; font-size: 14px; margin: 5px 0;">Cargando...</div>
+        <audio id="audio-${audioId}" controls preload="metadata" style="width: 100%; margin-top: 10px; height: 45px;">
           <source src="${audioData}" type="audio/mpeg">
           <source src="${audioData}" type="audio/mp3">
+          <source src="${audioData}" type="audio/wav">
           Tu navegador no soporta audio HTML5.
         </audio>
+        <div style="font-size: 12px; color: #999; margin-top: 5px;">Haz clic en ▶️ para reproducir</div>
       </div>
     `;
 
@@ -400,27 +403,35 @@ function playSimpleAudio(audioData) {
       
       audioElement.addEventListener('loadstart', () => {
         console.log('🔄 Cargando audio...');
-        statusElement.textContent = 'Cargando...';
+        statusElement.textContent = 'Cargando audio...';
         statusElement.style.color = '#666';
       });
 
-      audioElement.addEventListener('canplay', () => {
-        console.log('✅ Audio listo para reproducir');
-        statusElement.textContent = 'Listo - Reproduciendo...';
+      audioElement.addEventListener('loadedmetadata', () => {
+        console.log('📊 Metadatos cargados');
+        statusElement.textContent = 'Audio listo';
         statusElement.style.color = '#4CAF50';
+      });
+
+      audioElement.addEventListener('canplaythrough', () => {
+        console.log('✅ Audio completamente cargado');
+        statusElement.textContent = 'Listo para reproducir';
+        statusElement.style.color = '#2196F3';
         
-        // Intentar reproducción automática
-        const playPromise = audioElement.play();
-        if (playPromise !== undefined) {
-          playPromise.then(() => {
-            console.log('✅ Reproducción automática exitosa');
-            appendMessage('Sistema', '🎵 Audio reproduciéndose automáticamente');
-          }).catch(error => {
-            console.log('⚠️ Autoplay bloqueado:', error.message);
-            statusElement.textContent = 'Haz clic en ▶️ para reproducir';
-            statusElement.style.color = '#ff9800';
-          });
-        }
+        // Intentar reproducción automática una sola vez
+        setTimeout(() => {
+          const playPromise = audioElement.play();
+          if (playPromise !== undefined) {
+            playPromise.then(() => {
+              console.log('✅ Reproducción automática exitosa');
+              statusElement.textContent = 'Reproduciendo automáticamente...';
+            }).catch(error => {
+              console.log('⚠️ Autoplay bloqueado por el navegador:', error.message);
+              statusElement.textContent = 'Haz clic en ▶️ para reproducir';
+              statusElement.style.color = '#ff9800';
+            });
+          }
+        }, 100);
       });
 
       audioElement.addEventListener('play', () => {
@@ -429,25 +440,39 @@ function playSimpleAudio(audioData) {
         statusElement.style.color = '#4CAF50';
       });
 
+      audioElement.addEventListener('pause', () => {
+        console.log('⏸️ Audio pausado');
+        statusElement.textContent = 'Pausado';
+      });
+
       audioElement.addEventListener('ended', () => {
         console.log('🏁 Reproducción completada');
-        statusElement.textContent = 'Completado ✅';
+        statusElement.textContent = 'Reproducción completada ✅';
         statusElement.style.color = '#4CAF50';
       });
 
       audioElement.addEventListener('error', (e) => {
         console.error('❌ Error de audio:', e);
-        console.error('❌ Código de error:', audioElement.error ? audioElement.error.code : 'desconocido');
-        statusElement.textContent = `Error: ${audioElement.error ? audioElement.error.code : 'desconocido'}`;
+        console.error('❌ Detalles del error:', audioElement.error);
+        let errorMsg = 'Error desconocido';
+        if (audioElement.error) {
+          switch(audioElement.error.code) {
+            case 1: errorMsg = 'Descarga abortada'; break;
+            case 2: errorMsg = 'Error de red'; break;
+            case 3: errorMsg = 'Error de decodificación'; break;
+            case 4: errorMsg = 'Formato no soportado'; break;
+          }
+        }
+        statusElement.textContent = `❌ ${errorMsg}`;
         statusElement.style.color = '#f44336';
       });
 
-      // Forzar carga del audio
+      // Intentar cargar el audio
       audioElement.load();
     }
 
   } catch (error) {
-    console.error('❌ Error en playSimpleAudio:', error);
+    console.error('❌ Error en playAudioReliable:', error);
     appendMessage('Sistema', `❌ Error al procesar audio: ${error.message}`);
   }
 }
@@ -544,7 +569,7 @@ if (chatForm) {
       
       if (audioUrl) {
         console.log('🎵 Reproduciendo audio desde datos...');
-        playSimpleAudio(audioUrl);
+        playAudioReliable(audioUrl);
       } else {
         console.log('❌ No se encontró audio válido en la respuesta');
       }
@@ -621,135 +646,7 @@ function hideLoadingSpinner() {
   }
 }
 
-// --- REPRODUCIR AUDIO DESDE URL (Google Drive, etc.) ---
-function playAudioFromUrl(audioUrl) {
-  try {
-    console.log('🎵 Iniciando reproducción de audio desde URL...');
-    console.log('📊 URL de audio:', audioUrl);
-
-    // Validar que tenemos una URL válida
-    if (!audioUrl || typeof audioUrl !== 'string') {
-      console.error('❌ URL de audio inválida:', typeof audioUrl);
-      appendMessage('Sistema', '❌ URL de audio inválida');
-      return;
-    }
-
-    // Convertir URL de Google Drive si es necesario
-    let finalUrl = audioUrl;
-    if (audioUrl.includes('drive.google.com/file/d/')) {
-      const fileId = audioUrl.match(/\/file\/d\/([a-zA-Z0-9-_]+)/);
-      if (fileId) {
-        finalUrl = `https://drive.google.com/uc?export=download&id=${fileId[1]}`;
-        console.log('🔧 URL de Google Drive convertida:', finalUrl);
-      }
-    }
-
-    // Crear elemento de audio simple que se reproduce automáticamente
-    const audioId = 'audio_' + Date.now();
-    
-    const audioContainer = document.createElement('div');
-    audioContainer.className = 'audio-player-container';
-    audioContainer.innerHTML = `
-      <div style="background: #e8f5e8; padding: 10px; border-radius: 8px; margin: 10px 0; border: 2px solid #4CAF50;">
-        🔊 <strong>Respuesta de Audio:</strong> <span id="status-${audioId}">Cargando...</span>
-        <audio id="audio-${audioId}" controls autoplay style="width: 100%; margin-top: 8px;">
-          <source src="${finalUrl}" type="audio/mpeg">
-          <source src="${finalUrl}" type="audio/mp3">
-          Tu navegador no soporta el elemento de audio.
-        </audio>
-      </div>
-    `;
-
-    // Añadir al chat
-    chatLog.appendChild(audioContainer);
-    chatLog.scrollTop = chatLog.scrollHeight;
-
-    // Configurar eventos del audio
-    const audioElement = document.getElementById(`audio-${audioId}`);
-    const statusElement = document.getElementById(`status-${audioId}`);
-    
-    if (audioElement) {
-      audioElement.addEventListener('loadstart', () => {
-        console.log('🔄 Comenzando a cargar audio...');
-        statusElement.textContent = 'Cargando audio...';
-      });
-
-      audioElement.addEventListener('canplay', () => {
-        console.log('✅ Audio listo para reproducir');
-        statusElement.textContent = 'Reproduciendo automáticamente...';
-        
-        // Intentar reproducción automática
-        audioElement.play().then(() => {
-          console.log('✅ Reproducción automática iniciada');
-          appendMessage('Sistema', '🎵 ¡Audio reproduciéndose automáticamente!');
-        }).catch(error => {
-          console.error('❌ Error en reproducción automática:', error);
-          statusElement.textContent = 'Haz clic en play para reproducir';
-          appendMessage('Sistema', '▶️ Audio listo - Haz clic en play para reproducir');
-        });
-      });
-
-      audioElement.addEventListener('play', () => {
-        console.log('▶️ Audio comenzó a reproducirse');
-        statusElement.textContent = 'Reproduciendo...';
-      });
-
-      audioElement.addEventListener('pause', () => {
-        console.log('⏸️ Audio pausado');
-        statusElement.textContent = 'Pausado';
-      });
-
-      audioElement.addEventListener('ended', () => {
-        console.log('🏁 Reproducción terminada');
-        statusElement.textContent = 'Reproducción completada';
-      });
-
-      audioElement.addEventListener('error', (e) => {
-        console.error('❌ Error cargando audio:', e);
-        statusElement.textContent = 'Error al cargar audio';
-        appendMessage('Sistema', '❌ Error al cargar el audio. Verifica la URL.');
-      });
-    }
-
-    appendMessage('Sistema', '🔊 Audio de Google Drive cargado - Reproduciéndose automáticamente...');
-
-  } catch (error) {
-    console.error('❌ Error en playAudioFromUrl:', error);
-    appendMessage('Sistema', `❌ Error al procesar el audio: ${error.message}`);
-  }
-}
-
-// Mantener la función anterior para compatibilidad con base64
-function playAudioFromData(audioData) {
-  // Si es una URL, usar la nueva función
-  if (audioData && typeof audioData === 'string' && audioData.startsWith('http')) {
-    playAudioFromUrl(audioData);
-    return;
-  }
-  
-  // Si es base64, procesarlo como antes pero simplificado
-  try {
-    console.log('🎵 Reproduciendo audio base64...');
-    const audioId = 'audio_' + Date.now();
-    
-    const audioContainer = document.createElement('div');
-    audioContainer.innerHTML = `
-      <div style="background: #e8f5e8; padding: 10px; border-radius: 8px; margin: 10px 0; border: 2px solid #4CAF50;">
-        🔊 <strong>Respuesta de Audio:</strong>
-        <audio controls autoplay style="width: 100%; margin-top: 8px;">
-          <source src="${audioData}" type="audio/mpeg">
-        </audio>
-      </div>
-    `;
-    
-    chatLog.appendChild(audioContainer);
-    chatLog.scrollTop = chatLog.scrollHeight;
-    
-  } catch (error) {
-    console.error('❌ Error en playAudioFromData:', error);
-    appendMessage('Sistema', `❌ Error al procesar el audio: ${error.message}`);
-  }
-}
+// Función eliminada - ahora usamos solo playAudioReliable()
 
 // --- MOSTRAR CONFIGURACION FINAL FUERA DEL CHAT ---
 function renderConfiguracion(config_final) {
