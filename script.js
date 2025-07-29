@@ -377,11 +377,37 @@ function toggleRecording() {
 // --- FUNCIÓN DE PRUEBA DE AUDIO ---
 function testAudioPlayback() {
   console.log('🧪 Probando reproducción de audio...');
-  // Audio de prueba (ejemplo)
-  const testAudioData = 'data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAА1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsQAAAAAADSAAAAAVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV';
   
-  appendMessage('Sistema', '🧪 Probando audio de ejemplo...');
-  playAudioFromData(testAudioData);
+  // Generar un beep de prueba usando Web Audio API
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 800; // 800Hz beep
+    oscillator.type = 'sine';
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.5);
+    
+    appendMessage('Sistema', '🧪 ✅ Prueba de audio exitosa - Deberías escuchar un beep');
+    console.log('✅ Prueba de audio Web Audio API exitosa');
+    
+  } catch (error) {
+    console.error('❌ Error en prueba de audio:', error);
+    appendMessage('Sistema', '❌ Error en la prueba de audio: ' + error.message);
+    
+    // Fallback: crear audio de prueba simple
+    const testAudio = document.createElement('audio');
+    testAudio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSyO0/DMdiMFl3bK7+ONQQ0VYLXn57BdGQU+ltryxnkpBSl+zO7eizEJEV2w5OWlUBELUKXh77BdGAY9k9n0unkoAAA=';
+    testAudio.play().catch(e => console.error('Error en audio fallback:', e));
+  }
 }
 
 // Agregar botón de prueba después del login
@@ -567,7 +593,6 @@ function playAudioFromData(audioData) {
   try {
     console.log('🎵 Iniciando reproducción de audio...');
     console.log('📊 Longitud de datos:', audioData ? audioData.length : 0);
-    console.log('📊 Primeros 200 caracteres:', audioData ? audioData.substring(0, 200) : 'null');
 
     // Validar que tenemos datos de audio válidos
     if (!audioData || typeof audioData !== 'string') {
@@ -579,7 +604,6 @@ function playAudioFromData(audioData) {
     // Verificar si es un data URL válido
     if (!audioData.startsWith('data:audio/')) {
       console.error('❌ No es un data URL de audio válido');
-      console.error('❌ Datos recibidos:', audioData.substring(0, 100));
       appendMessage('Sistema', '❌ Formato de audio no válido');
       return;
     }
@@ -587,13 +611,25 @@ function playAudioFromData(audioData) {
     const mimeType = audioData.substring(5, audioData.indexOf(';'));
     console.log('✅ Formato de audio detectado:', mimeType);
 
-    // Crear controles de audio visibles PRIMERO
+    // Crear controles de audio visibles con botón de reproducción manual
     const audioContainer = document.createElement('div');
     audioContainer.className = 'audio-player-container';
+    
+    const audioId = 'audio_' + Date.now();
     audioContainer.innerHTML = `
       <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 10px 0; border: 2px solid #4CAF50;">
         🔊 <strong>Respuesta de Audio:</strong><br>
-        <audio controls preload="auto" style="width: 100%; margin-top: 8px; height: 40px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
+          <button id="play-btn-${audioId}" onclick="playManualAudio('${audioId}')" 
+                  style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+            ▶️ Reproducir Audio
+          </button>
+          <button id="stop-btn-${audioId}" onclick="stopManualAudio('${audioId}')" 
+                  style="background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; display: none;">
+            ⏹️ Detener
+          </button>
+        </div>
+        <audio id="${audioId}" controls preload="auto" style="width: 100%; height: 40px;">
           <source src="${audioData}" type="${mimeType}">
           Tu navegador no soporta la reproducción de audio.
         </audio>
@@ -603,43 +639,52 @@ function playAudioFromData(audioData) {
       </div>
     `;
 
-    // Añadir controles al chat INMEDIATAMENTE
+    // Añadir controles al chat
     chatLog.appendChild(audioContainer);
     chatLog.scrollTop = chatLog.scrollHeight;
 
-    // Crear elemento de audio para reproducción automática
-    const audio = new Audio();
-    audio.src = audioData;
-    audio.preload = 'auto';
-
-    // Eventos de audio
-    audio.oncanplay = () => {
-      console.log('✅ Audio listo para reproducir');
-      appendMessage('Sistema', '🔊 Audio cargado - Reproduciendo automáticamente...');
+    // Crear funciones globales para control manual
+    window.playManualAudio = function(audioId) {
+      const audio = document.getElementById(audioId);
+      const playBtn = document.getElementById(`play-btn-${audioId}`);
+      const stopBtn = document.getElementById(`stop-btn-${audioId}`);
       
-      // Intentar reproducción automática después de un breve delay
-      setTimeout(() => {
+      if (audio) {
         audio.play()
           .then(() => {
-            console.log('✅ Reproducción automática exitosa');
-            appendMessage('Sistema', '▶️ Reproduciendo audio automáticamente');
+            console.log('✅ Reproducción manual exitosa');
+            appendMessage('Sistema', '▶️ Reproduciendo audio manualmente');
+            playBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-block';
           })
           .catch(error => {
-            console.warn('⚠️ Reproducción automática bloqueada:', error.message);
-            appendMessage('Sistema', '⚠️ Usa los controles de audio de arriba para reproducir');
+            console.error('❌ Error en reproducción manual:', error);
+            appendMessage('Sistema', `❌ Error al reproducir: ${error.message}`);
           });
-      }, 200);
+          
+        audio.onended = () => {
+          playBtn.style.display = 'inline-block';
+          stopBtn.style.display = 'none';
+          appendMessage('Sistema', '⏹️ Audio terminado');
+        };
+      }
     };
 
-    audio.onerror = (error) => {
-      console.error('❌ Error reproduciendo audio:', error);
-      appendMessage('Sistema', `❌ Error al reproducir audio. Verifica el formato.`);
+    window.stopManualAudio = function(audioId) {
+      const audio = document.getElementById(audioId);
+      const playBtn = document.getElementById(`play-btn-${audioId}`);
+      const stopBtn = document.getElementById(`stop-btn-${audioId}`);
+      
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+        playBtn.style.display = 'inline-block';
+        stopBtn.style.display = 'none';
+        appendMessage('Sistema', '⏹️ Audio detenido');
+      }
     };
 
-    audio.onended = () => {
-      console.log('⏹️ Audio terminado');
-      appendMessage('Sistema', '⏹️ Reproducción de audio completada');
-    };
+    appendMessage('Sistema', '🔊 Audio recibido - Usa el botón "▶️ Reproducir Audio" para escucharlo');
 
   } catch (error) {
     console.error('❌ Error en playAudioFromData:', error);
