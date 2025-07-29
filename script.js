@@ -47,19 +47,6 @@ manualLoginForm.addEventListener('submit', async (e) => {
 
   await initializeUser(currentUser);
 
-  // --- ENVÍA nombre y chatId a N8N tras login ---
-  fetch("https://mauriciomeseguer.up.railway.app/webhook/bf351844-0718-4d84-bd9c-e5fbea35a83b", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      user_name: name,
-      chat_id: chatId
-    })
-  })
-  .then(r => r.text())
-  .then(console.log)
-  .catch(console.error);
-
   showMainApp();
   updateUserUI();
 });
