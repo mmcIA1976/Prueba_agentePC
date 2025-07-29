@@ -83,48 +83,8 @@
     </footer>
   </div>
 
-  <!-- VAPI SDK with multiple fallbacks -->
-  <script>
-    // Cargar VAPI SDK con múltiples CDNs de respaldo
-    function loadVapiSDK() {
-      const urls = [
-        'https://cdn.jsdelivr.net/npm/@vapi-ai/web@1.0.11/dist/index.js',
-        'https://unpkg.com/@vapi-ai/web@1.0.11/dist/index.js',
-        'https://cdn.skypack.dev/@vapi-ai/web@1.0.11'
-      ];
-      
-      let currentIndex = 0;
-      
-      function tryLoad() {
-        if (currentIndex >= urls.length) {
-          console.error('❌ No se pudo cargar VAPI SDK desde ningún CDN');
-          window.vapiLoadFailed = true;
-          return;
-        }
-        
-        const script = document.createElement('script');
-        script.src = urls[currentIndex];
-        script.async = true;
-        
-        script.onload = function() {
-          console.log('✅ VAPI SDK cargado desde:', urls[currentIndex]);
-          window.vapiLoaded = true;
-        };
-        
-        script.onerror = function() {
-          console.warn('❌ Falló cargar desde:', urls[currentIndex]);
-          currentIndex++;
-          tryLoad();
-        };
-        
-        document.head.appendChild(script);
-      }
-      
-      tryLoad();
-    }
-    
-    loadVapiSDK();
-  </script>
+  <!-- VAPI SDK - Official CDN -->
+  <script src="https://cdn.vapi.ai/web/v1.0.11.js" onload="window.vapiLoaded = true;" onerror="window.vapiLoadFailed = true;"></script>
   <!-- Scripts locales -->
   <script src="script.js"></script>
 </body>

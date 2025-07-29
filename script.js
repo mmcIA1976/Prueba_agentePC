@@ -163,13 +163,10 @@ function initializeVAPI() {
     return;
   }
   
-  // Verificar diferentes formas en que VAPI puede estar disponible
-  const vapiConstructor = window.Vapi || 
-                          window.VapiSDK || 
-                          (window.VapiWeb && window.VapiWeb.Vapi) ||
-                          (window.VapiAI && window.VapiAI.Vapi);
+  // El SDK oficial expone 'Vapi' directamente en window
+  const vapiConstructor = window.Vapi;
   
-  console.log('🔍 Verificando:', typeof vapiConstructor, !!vapiConstructor);
+  console.log('🔍 Verificando VAPI oficial:', typeof vapiConstructor, !!vapiConstructor);
   
   if (vapiConstructor && typeof vapiConstructor === 'function') {
     try {
@@ -310,18 +307,11 @@ document.addEventListener('DOMContentLoaded', () => {
     updateMicButton(); // Inicial styling
   }
   
-  // Inicializar VAPI cuando se carga la página - más tiempo para cargar el SDK
-  const delay = isDeploy ? 5000 : 2000;
+  // Inicializar VAPI cuando se carga la página
   setTimeout(() => {
     console.log('🚀 Iniciando carga de VAPI...');
-    // Verificar si el SDK se cargó correctamente
-    if (window.vapiLoaded || window.Vapi) {
-      initializeVAPI();
-    } else {
-      // Si no se cargó, esperar un poco más y reintentar
-      setTimeout(initializeVAPI, 2000);
-    }
-  }, delay);
+    initializeVAPI();
+  }, 2000);
 });
 
 // --- Chat envío de mensajes ---
