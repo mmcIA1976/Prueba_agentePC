@@ -269,6 +269,12 @@ async function sendTranscribedMessage(message) {
     // Procesar respuesta igual que en el chat normal
     const _out = Array.isArray(data) && data.length && data[0].output ? data[0].output : data;
 
+    // ---- Reproducir audio si viene en la respuesta ----
+    if (_out && _out.data && _out.data.startsWith && (_out.data.startsWith('data:audio/mpeg') || _out.data.startsWith('data:audio/mpga'))) {
+      console.log('🔊 Reproduciendo audio de respuesta transcrita...');
+      playAudioFromData(_out.data);
+    }
+
     if (_out && _out.isConfigFinal === true && _out.config_final) {
       renderConfiguracion(_out.config_final);
     } else {
@@ -388,6 +394,12 @@ if (chatForm) {
       // --- Compatibilidad con respuesta anidada tipo [{output: { ... }}] ---
       const _out = Array.isArray(data) && data.length && data[0].output ? data[0].output : data;
 
+      // ---- Reproducir audio si viene en la respuesta ----
+      if (_out && _out.data && _out.data.startsWith && (_out.data.startsWith('data:audio/mpeg') || _out.data.startsWith('data:audio/mpga'))) {
+        console.log('🔊 Reproduciendo audio de respuesta...');
+        playAudioFromData(_out.data);
+      }
+
       // ---- Mostrar configuración final solo si corresponde ----
       if (_out && _out.isConfigFinal === true && _out.config_final) {
         renderConfiguracion(_out.config_final);
@@ -457,6 +469,54 @@ function hideLoadingSpinner() {
   if (loadingSpinnerElement) {
     chatLog.removeChild(loadingSpinnerElement);
     loadingSpinnerElement = null;
+  }
+}
+
+// --- REPRODUCIR AUDIO DESDE DATA ---
+function playAudioFromData(audioData) {
+  try {
+    console.log('🎵 Iniciando reproducción de audio...');
+    
+    // Crear elemento de audio
+    const audio = new Audio();
+    
+    // Configurar el audio
+    audio.src = audioData; // audioData debe ser un data URL válido
+    audio.autoplay = true;
+    audio.controls = false;
+    
+    // Manejar eventos de audio
+    audio.onloadstart = () => {
+      console.log('🔄 Cargando audio...');
+      appendMessage('Sistema', '🔊 Reproduciendo respuesta de audio...');
+    };
+    
+    audio.oncanplay = () => {
+      console.log('✅ Audio listo para reproducir');
+    };
+    
+    audio.onplay = () => {
+      console.log('▶️ Audio iniciado');
+    };
+    
+    audio.onended = () => {
+      console.log('⏹️ Audio terminado');
+    };
+    
+    audio.onerror = (error) => {
+      console.error('❌ Error reproduciendo audio:', error);
+      appendMessage('Sistema', '❌ Error al reproducir el audio');
+    };
+    
+    // Iniciar reproducción
+    audio.play().catch(error => {
+      console.error('❌ Error al iniciar reproducción:', error);
+      appendMessage('Sistema', '❌ No se pudo reproducir el audio automáticamente. Es posible que necesites interactuar con la página primero.');
+    });
+    
+  } catch (error) {
+    console.error('❌ Error en playAudioFromData:', error);
+    appendMessage('Sistema', '❌ Error al procesar el audio');
   }
 }
 
