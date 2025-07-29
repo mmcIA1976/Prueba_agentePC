@@ -149,15 +149,16 @@ let vapi = null;
 let isRecording = false;
 
 let vapiRetryCount = 0;
-const maxVapiRetries = 5;
+const maxVapiRetries = 3;
 
 function initializeVAPI() {
   vapiRetryCount++;
   
   console.log(`🔄 Intento ${vapiRetryCount} de inicializar VAPI...`);
+  console.log('🔍 Verificando VAPI en window:', typeof window.Vapi, !!window.Vapi);
   
   // Verificar si VAPI está disponible en el objeto window
-  if (typeof window.Vapi !== 'undefined' && window.Vapi) {
+  if (typeof window.Vapi !== 'undefined' && window.Vapi && typeof window.Vapi === 'function') {
     try {
       console.log('📡 VAPI SDK detectado, inicializando...');
       vapi = new window.Vapi("b7395881-a803-4c64-97c2-2e167ad1633c");
@@ -217,21 +218,31 @@ function initializeVAPI() {
     } catch (error) {
       console.error('❌ Error al inicializar VAPI:', error);
       if (vapiRetryCount < maxVapiRetries) {
-        console.log(`🔄 Reintentando en 3 segundos... (${vapiRetryCount}/${maxVapiRetries})`);
-        setTimeout(initializeVAPI, 3000);
+        console.log(`🔄 Reintentando en 2 segundos... (${vapiRetryCount}/${maxVapiRetries})`);
+        setTimeout(initializeVAPI, 2000);
       } else {
-        console.error('❌ VAPI no pudo inicializarse después de varios intentos');
-        appendMessage('Sistema', '⚠️ Función de voz no disponible en este entorno. El chat funciona normalmente.');
+        console.error('❌ VAPI no pudo inicializarse');
+        showVoiceUnavailable();
       }
     }
   } else if (vapiRetryCount < maxVapiRetries) {
     console.log(`⏳ SDK de VAPI no detectado, reintentando... (${vapiRetryCount}/${maxVapiRetries})`);
-    console.log('🔍 Verificando:', typeof window.Vapi, window.Vapi);
-    setTimeout(initializeVAPI, 3000);
+    setTimeout(initializeVAPI, 2000);
   } else {
-    console.error('❌ SDK de VAPI no se pudo cargar después de varios intentos');
-    console.log('ℹ️ Esto puede ser normal en el entorno de preview de Replit');
-    appendMessage('Sistema', '⚠️ Función de voz no disponible en este entorno. El chat funciona normalmente.');
+    console.error('❌ SDK de VAPI no disponible');
+    console.log('ℹ️ Esto es normal en el entorno de preview de Replit');
+    showVoiceUnavailable();
+  }
+}
+
+// Función para mostrar que la voz no está disponible
+function showVoiceUnavailable() {
+  console.log('📢 Función de voz no disponible, deshabilitando micrófono');
+  const micButton = document.getElementById('mic-button');
+  if (micButton) {
+    micButton.style.opacity = '0.5';
+    micButton.style.cursor = 'not-allowed';
+    micButton.title = 'Función de voz no disponible en este entorno';
   }
 }
 
@@ -258,7 +269,7 @@ function updateMicButton() {
 // Función para el botón del micrófono
 function toggleRecording() {
   if (!vapi) {
-    appendMessage('Sistema', '⚠️ Función de voz no disponible. Puedes usar el chat normalmente escribiendo.');
+    console.log('❌ VAPI no disponible para grabación');
     return;
   }
 
@@ -290,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
       micButton.addEventListener('click', toggleRecording);
       updateMicButton(); // Inicial styling
     }
-  }, 1000);
+  }, 1500);
 });
 
 // --- Chat envío de mensajes ---
