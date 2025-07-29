@@ -74,7 +74,7 @@
       <div id="config-container"></div>
       <div id="fotos-container"></div>
 
-      
+
     </main>
     <footer>
       <div class="footer-content">
@@ -83,8 +83,10 @@
     </footer>
   </div>
 
-  <!-- VAPI SDK debe cargarse ANTES que nuestro script -->
-  <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/index.js"></script>
+  <!-- VAPI SDK con múltiples CDNs de respaldo -->
+  <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web@1.0.11/dist/index.js" 
+          onerror="this.onerror=null; this.src='https://unpkg.com/@vapi-ai/web@1.0.11/dist/index.js';"
+          onload="console.log('✅ VAPI SDK cargado desde:', this.src)"></script>
   <!-- Scripts locales -->
   <script src="script.js"></script>
 </body>
