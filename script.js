@@ -148,13 +148,19 @@ async function saveMessageToDB(author, content) {
 let vapi = null;
 let isRecording = false;
 
+let vapiRetryCount = 0;
+const maxVapiRetries = 10;
+
 function initializeVAPI() {
+  vapiRetryCount++;
+  
   // Esperar a que VAPI esté disponible
   if (typeof window.Vapi !== 'undefined') {
     try {
       vapi = new window.Vapi("b7395881-a803-4c64-97c2-2e167ad1633c");
       
       console.log('✅ VAPI inicializado correctamente');
+      vapiRetryCount = 0; // Reset counter
 
       // Eventos de VAPI
       vapi.on('call-start', () => {
@@ -207,10 +213,19 @@ function initializeVAPI() {
 
     } catch (error) {
       console.error('❌ Error al inicializar VAPI:', error);
+      if (vapiRetryCount < maxVapiRetries) {
+        setTimeout(initializeVAPI, 2000);
+      } else {
+        console.error('❌ VAPI no pudo inicializarse después de varios intentos');
+        appendMessage('Sistema', '⚠️ Función de voz no disponible. Puedes usar el chat normalmente.');
+      }
     }
-  } else {
+  } else if (vapiRetryCount < maxVapiRetries) {
     console.log('⏳ VAPI no disponible aún, reintentando...');
-    setTimeout(initializeVAPI, 1000);
+    setTimeout(initializeVAPI, 2000);
+  } else {
+    console.error('❌ VAPI no se pudo cargar después de varios intentos');
+    appendMessage('Sistema', '⚠️ Función de voz no disponible. Puedes usar el chat normalmente.');
   }
 }
 
@@ -237,8 +252,7 @@ function updateMicButton() {
 // Función para el botón del micrófono
 function toggleRecording() {
   if (!vapi) {
-    appendMessage('Sistema', '❌ VAPI no está disponible. Recargando página...');
-    setTimeout(() => location.reload(), 2000);
+    appendMessage('Sistema', '⚠️ Función de voz no disponible. Puedes usar el chat normalmente escribiendo.');
     return;
   }
 
@@ -265,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
       micButton.addEventListener('click', toggleRecording);
       updateMicButton(); // Inicial styling
     }
-  }, 2000);
+  }, 500);
 });
 
 // --- Chat envío de mensajes ---
