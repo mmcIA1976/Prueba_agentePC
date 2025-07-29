@@ -62,7 +62,6 @@ manualLoginForm.addEventListener('submit', async (e) => {
 
   showMainApp();
   updateUserUI();
-  addTestButton(); // Agregar botón de prueba después del login
 });
 
 // --- LLAMADAS API LOCAL EXPRESS ---
@@ -300,11 +299,10 @@ async function sendTranscribedMessage(message) {
     }
     
     if (audioUrl) {
-      console.log('🎵 Reproduciendo audio transcrito desde URL...');
-      playAudioFromUrl(audioUrl);
+      console.log('🎵 Reproduciendo audio transcrito...');
+      playSimpleAudio(audioUrl);
     } else {
-      console.log('❌ No se encontró URL de audio válida en respuesta transcrita');
-      appendMessage('Sistema', '📝 Solo texto recibido - sin audio');
+      console.log('❌ No se encontró audio válido en respuesta transcrita');
     }
 
     if (_out && _out.isConfigFinal === true && _out.config_final) {
@@ -373,55 +371,84 @@ function toggleRecording() {
   }
 }
 
-// --- FUNCIÓN DE PRUEBA DE AUDIO ---
-function testAudioPlayback() {
-  console.log('🧪 Probando reproducción de audio...');
-  
+// --- Función simplificada para reproducir audio ---
+function playSimpleAudio(audioData) {
   try {
-    // Crear un audio de prueba simple con HTML5
-    const testAudio = document.createElement('audio');
-    testAudio.preload = 'auto';
+    console.log('🎵 Reproduciendo audio con método simplificado...');
     
-    // URL de un audio de prueba público y corto (notification sound)
-    testAudio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSyO0/DMdiMFl3bK7+ONQQ0VYLXn57BdGQU+ltryxnkpBSl+zO7eizEJEV2w5OWlUBELUKXh77BdGAY9k9n0unkoAAA=';
-    
-    testAudio.volume = 0.5;
-    
-    testAudio.addEventListener('canplaythrough', () => {
-      console.log('✅ Audio de prueba cargado correctamente');
-      testAudio.play().then(() => {
-        console.log('✅ Prueba de audio HTML5 exitosa');
-        appendMessage('Sistema', '🧪 ✅ Prueba de audio exitosa - Deberías escuchar un sonido');
-      }).catch(error => {
-        console.error('❌ Error reproduciendo audio de prueba:', error);
-        appendMessage('Sistema', '❌ Error en reproducción de prueba: ' + error.message);
-      });
-    });
-    
-    testAudio.addEventListener('error', (e) => {
-      console.error('❌ Error cargando audio de prueba:', e);
-      appendMessage('Sistema', '❌ Error cargando audio de prueba');
-    });
-    
-    // Cargar el audio
-    testAudio.load();
-    
-  } catch (error) {
-    console.error('❌ Error en prueba de audio:', error);
-    appendMessage('Sistema', '❌ Error general en la prueba de audio: ' + error.message);
-  }
-}
+    const audioId = 'audio_' + Date.now();
+    const audioContainer = document.createElement('div');
+    audioContainer.className = 'audio-response-container';
+    audioContainer.innerHTML = `
+      <div style="background: #e8f5e8; padding: 12px; border-radius: 8px; margin: 10px 0; border: 2px solid #4CAF50;">
+        🔊 <strong>Respuesta de Audio</strong> <span id="status-${audioId}" style="color: #666;">Preparando...</span>
+        <audio id="audio-${audioId}" controls preload="auto" style="width: 100%; margin-top: 8px;">
+          <source src="${audioData}" type="audio/mpeg">
+          <source src="${audioData}" type="audio/mp3">
+          Tu navegador no soporta audio HTML5.
+        </audio>
+      </div>
+    `;
 
-// Agregar botón de prueba después del login
-function addTestButton() {
-  const chatContainer = document.getElementById('chat-container');
-  if (chatContainer && !document.getElementById('test-audio-btn')) {
-    const testBtn = document.createElement('button');
-    testBtn.id = 'test-audio-btn';
-    testBtn.textContent = '🧪 Probar Audio';
-    testBtn.style.cssText = 'margin: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer;';
-    testBtn.onclick = testAudioPlayback;
-    chatContainer.insertBefore(testBtn, chatContainer.firstChild);
+    chatLog.appendChild(audioContainer);
+    chatLog.scrollTop = chatLog.scrollHeight;
+
+    const audioElement = document.getElementById(`audio-${audioId}`);
+    const statusElement = document.getElementById(`status-${audioId}`);
+    
+    if (audioElement && statusElement) {
+      
+      audioElement.addEventListener('loadstart', () => {
+        console.log('🔄 Cargando audio...');
+        statusElement.textContent = 'Cargando...';
+        statusElement.style.color = '#666';
+      });
+
+      audioElement.addEventListener('canplay', () => {
+        console.log('✅ Audio listo para reproducir');
+        statusElement.textContent = 'Listo - Reproduciendo...';
+        statusElement.style.color = '#4CAF50';
+        
+        // Intentar reproducción automática
+        const playPromise = audioElement.play();
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            console.log('✅ Reproducción automática exitosa');
+            appendMessage('Sistema', '🎵 Audio reproduciéndose automáticamente');
+          }).catch(error => {
+            console.log('⚠️ Autoplay bloqueado:', error.message);
+            statusElement.textContent = 'Haz clic en ▶️ para reproducir';
+            statusElement.style.color = '#ff9800';
+          });
+        }
+      });
+
+      audioElement.addEventListener('play', () => {
+        console.log('▶️ Reproducción iniciada');
+        statusElement.textContent = 'Reproduciendo...';
+        statusElement.style.color = '#4CAF50';
+      });
+
+      audioElement.addEventListener('ended', () => {
+        console.log('🏁 Reproducción completada');
+        statusElement.textContent = 'Completado ✅';
+        statusElement.style.color = '#4CAF50';
+      });
+
+      audioElement.addEventListener('error', (e) => {
+        console.error('❌ Error de audio:', e);
+        console.error('❌ Código de error:', audioElement.error ? audioElement.error.code : 'desconocido');
+        statusElement.textContent = `Error: ${audioElement.error ? audioElement.error.code : 'desconocido'}`;
+        statusElement.style.color = '#f44336';
+      });
+
+      // Forzar carga del audio
+      audioElement.load();
+    }
+
+  } catch (error) {
+    console.error('❌ Error en playSimpleAudio:', error);
+    appendMessage('Sistema', `❌ Error al procesar audio: ${error.message}`);
   }
 }
 
@@ -516,10 +543,10 @@ if (chatForm) {
       }
       
       if (audioUrl) {
-        console.log('🎵 Reproduciendo audio desde URL...');
-        playAudioFromUrl(audioUrl);
+        console.log('🎵 Reproduciendo audio desde datos...');
+        playSimpleAudio(audioUrl);
       } else {
-        console.log('❌ No se encontró URL de audio válida en la respuesta');
+        console.log('❌ No se encontró audio válido en la respuesta');
       }
 
       // ---- Mostrar configuración final solo si corresponde ----
