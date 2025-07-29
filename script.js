@@ -67,25 +67,25 @@ manualLoginForm.addEventListener('submit', async (e) => {
 // --- LLAMADAS API LOCAL EXPRESS ---
 async function callLocalAPI(endpoint, data) {
   try {
-    const url = /api/${endpoint};
+    const url = `/api/${endpoint}`;
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!response.ok) throw new Error(HTTP error! status: ${response.status});
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const result = await response.json();
-    console.log(✅ API Call: ${endpoint}, result);
+    console.log(`✅ API Call: ${endpoint}`, result);
     return result;
   } catch (error) {
-    console.error(❌ Error en API Call ${endpoint}:, error);
+    console.error(`❌ Error en API Call ${endpoint}:`, error);
     return { success: false, error: error.message };
   }
 }
 
 // --- Generar ID único de chat ---
 function generateChatId() {
-  return ${currentUser.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)};
+  return `${currentUser.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
 // --- Mostrar pantalla de login ---
@@ -108,7 +108,7 @@ function showMainApp() {
 function updateUserUI() {
   if (currentUser) {
     document.getElementById('user-avatar').src =
-      https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(currentUser.name)};
+      `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(currentUser.name)}`;
     document.getElementById('user-name').textContent = currentUser.name || 'Usuario';
   }
 }
@@ -255,7 +255,7 @@ if (chatForm) {
         })
       });
       console.log('Estado de respuesta:', response.status);
-      if (!response.ok) throw new Error(Error HTTP: ${response.status});
+      if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
       const data = await response.json();
       console.log('Respuesta de N8N:', data);
       hideLoadingSpinner();
@@ -284,7 +284,7 @@ if (chatForm) {
       }
     } catch (error) {
       hideLoadingSpinner();
-      appendMessage('Agente', Error de conexión: ${error.message});
+      appendMessage('Agente', `Error de conexión: ${error.message}`);
     }
   });
 }
@@ -301,7 +301,7 @@ function appendMessage(author, text) {
     clase = 'chat-message agent';
   }
   div.className = clase;
-  div.innerHTML = ${avatarImg}<div>${text}</div>;
+  div.innerHTML = `${avatarImg}<div>${text}</div>`;
   chatLog.appendChild(div);
 
   if (author === 'Agente' && text.length > 250) {
@@ -315,7 +315,7 @@ let loadingSpinnerElement = null;
 function showLoadingSpinner() {
   const div = document.createElement('div');
   div.className = 'loading-spinner';
-  div.innerHTML = 
+  div.innerHTML = `
     <img class="avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=robot" alt="IA">
     <div class="spinner"></div>
     <div class="loading-dots">
@@ -323,7 +323,7 @@ function showLoadingSpinner() {
       <span></span>
       <span></span>
     </div>
-  ;
+  `;
   chatLog.appendChild(div);
   chatLog.scrollTop = chatLog.scrollHeight;
   loadingSpinnerElement = div;
@@ -356,14 +356,14 @@ function renderConfiguracion(config_final) {
 
   // Renderiza todas las opciones válidas (AMD, Intel, etc.)
   opcionesValidas.forEach(option => {
-    const title = option.nombre ? <h3>${option.nombre} ${option.total ? - ${option.total} : ''}</h3> : '';
-    let html = <div class="config-option">${title}<ul>;
+    const title = option.nombre ? `<h3>${option.nombre} ${option.total ? `- ${option.total}` : ''}</h3>` : '';
+    let html = `<div class="config-option">${title}<ul>`;
     option.componentes.forEach(comp => {
-      html += <li>
+      html += `<li>
         <b>${comp.tipo || comp.nombre || ''}:</b> ${comp.modelo || comp.descripcion || ''}
-        ${comp.precio ? <span> · <b>${comp.precio}</b></span> : ''}
-        ${comp.url ?  · <a href="${comp.url}" target="_blank" rel="noopener">Comprar</a> : ''}
-      </li>;
+        ${comp.precio ? `<span> · <b>${comp.precio}</b></span>` : ''}
+        ${comp.url ? ` · <a href="${comp.url}" target="_blank" rel="noopener">Comprar</a>` : ''}
+      </li>`;
     });
     html += '</ul></div>';
     configContainer.innerHTML += html;
