@@ -282,7 +282,7 @@ async function sendTranscribedMessage(message) {
     // Buscar URL de audio en diferentes campos
     const audioFields = ['data', 'audio', 'audioUrl', 'audio_url', 'audioData', 'sound', 'voice', 'audio_data', 'file', 'attachment', 'media'];
     
-    for (const field of audioFields) {
+    for (const field of transcriptionAudioFields) {
       if (_out && _out[field]) {
         console.log(`📊 Campo "${field}" encontrado en transcripción:`, typeof _out[field], _out[field]);
         
@@ -498,7 +498,7 @@ if (chatForm) {
       // Buscar URL de audio en diferentes campos
       const audioFields = ['data', 'audio', 'audioUrl', 'audio_url', 'audioData', 'sound', 'voice', 'audio_data', 'file', 'attachment', 'media'];
       
-      for (const field of audioFields) {
+      for (const field of supportedAudioFields) {
         if (_out && _out[field]) {
           console.log(`📊 Campo "${field}" encontrado:`, typeof _out[field], _out[field]);
           
