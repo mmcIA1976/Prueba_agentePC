@@ -144,8 +144,93 @@ async function saveMessageToDB(author, content) {
   }
 }
 
+// --- VAPI Integration ---
+let vapi = null;
+let isRecording = false;
+
+function initializeVAPI() {
+  if (typeof window.Vapi !== 'undefined') {
+    vapi = new window.Vapi({
+      publicKey: "b7395881-a803-4c64-97c2-2e167ad1633c",
+      assistantId: "ed7107e6-3fa0-43c7-8440-5bf0d6765a10"
+    });
+
+    // Eventos de VAPI
+    vapi.on('speech-start', () => {
+      console.log('Usuario empezó a hablar');
+      appendMessage('Sistema', '🎤 Escuchando...');
+    });
+
+    vapi.on('speech-end', () => {
+      console.log('Usuario terminó de hablar');
+    });
+
+    vapi.on('transcript', (transcript) => {
+      console.log('Transcripción:', transcript);
+      if (transcript.user) {
+        // Reemplazar el mensaje "Escuchando..." con la transcripción
+        const messages = chatLog.querySelectorAll('.chat-message');
+        const lastMessage = messages[messages.length - 1];
+        if (lastMessage && lastMessage.textContent.includes('🎤 Escuchando...')) {
+          lastMessage.remove();
+        }
+        appendMessage('Tú', transcript.user);
+        saveMessageToDB('Tú', transcript.user);
+      }
+    });
+
+    vapi.on('message', (message) => {
+      console.log('Mensaje del agente:', message);
+      if (message.content) {
+        appendMessage('Agente', message.content);
+        saveMessageToDB('Agente', message.content);
+      }
+    });
+
+    vapi.on('error', (error) => {
+      console.error('Error VAPI:', error);
+      appendMessage('Sistema', 'Error en la conexión de voz');
+    });
+  }
+}
+
+// Función para el botón del micrófono
+function toggleRecording() {
+  const micButton = document.getElementById('mic-button');
+  
+  if (!vapi) {
+    alert('VAPI no está inicializado');
+    return;
+  }
+
+  if (!isRecording) {
+    vapi.start();
+    isRecording = true;
+    micButton.textContent = '⏹️';
+    micButton.classList.add('recording');
+    micButton.title = 'Detener grabación';
+  } else {
+    vapi.stop();
+    isRecording = false;
+    micButton.textContent = '🎤';
+    micButton.classList.remove('recording');
+    micButton.title = 'Hablar';
+  }
+}
+
 // --- Inicializar la aplicación ---
-document.addEventListener('DOMContentLoaded', showLoginScreen);
+document.addEventListener('DOMContentLoaded', () => {
+  showLoginScreen();
+  
+  // Inicializar VAPI cuando se carga la página
+  setTimeout(initializeVAPI, 1000);
+  
+  // Event listener para el botón del micrófono
+  const micButton = document.getElementById('mic-button');
+  if (micButton) {
+    micButton.addEventListener('click', toggleRecording);
+  }
+});
 
 // --- Chat envío de mensajes ---
 if (chatForm) {

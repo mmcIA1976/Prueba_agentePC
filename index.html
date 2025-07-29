@@ -63,6 +63,7 @@
             <div id="chat-log"></div>
             <form id="chat-form" autocomplete="off" style="display:flex; gap:8px;">
               <input type="text" id="chat-input" placeholder="Escribe tu mensaje...">
+              <button type="button" id="mic-button" title="Hablar">🎤</button>
               <button type="submit">Enviar</button>
             </form>
           </div>
@@ -73,31 +74,7 @@
       <div id="config-container"></div>
       <div id="fotos-container"></div>
 
-      <!-- VAPI widget, SIEMPRE visible -->
-      <vapi-widget
-        public-key="b7395881-a803-4c64-97c2-2e157ad1633c"
-        assistant-id="ed7107e6-3fa0-43c7-8440-5bf0d6765a10"
-        mode="voice"
-        theme="dark"
-        base-bg-color="#000000"
-        accent-color="#14B8A6"
-        cta-button-color="#000000"
-        cta-button-text-color="#ffffff"
-        border-radius="large"
-        size="full"
-        position="top-right"
-        title="HABLA CON EL MICRO "
-        start-button-text="Comencemos"
-        end-button-text="Finalizar"
-        cta-subtitle="configurador IA"
-        chat-first-message="Hey, How can I help you today?"
-        chat-placeholder="Type your message..."
-        voice-show-transcript="false"
-        consent-required="true"
-        consent-title="Terms and conditions"
-        consent-content='By clicking "Agree," and each time I interact with this AI agent, I consent to the recording, storage, and sharing of my communications with third-party service providers, and as otherwise described in our Terms of Service.'
-        consent-storage-key="vapi_widget_consent"
-      ></vapi-widget>
+      
     </main>
     <footer>
       <div class="footer-content">
@@ -199,7 +176,7 @@
     // --- Inicializar la aplicación ---
     document.addEventListener('DOMContentLoaded', showLoginScreen);
   </script>
-  <!-- SDK VAPI solo se carga una vez al final -->
-  <script src="https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js" async type="text/javascript"></script>
+  <!-- VAPI SDK -->
+  <script src="https://unpkg.com/@vapi-ai/web@latest/dist/index.js"></script>
 </body>
 </html>
