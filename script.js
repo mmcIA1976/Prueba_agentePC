@@ -362,8 +362,7 @@ function toggleRecording() {
 function playAudioReliable(audioData) {
   try {
     console.log('🎵 Reproduciendo audio desde N8N:', typeof audioData);
-    console.log('📊 Longitud total del audio:', audioData.length);
-    console.log('📊 Primeros 100 caracteres:', audioData.substring(0, 100));
+    console.log('📊 URL completa del audio:', audioData);
     
     // Convertir URL de Google Drive si es necesario
     let finalAudioUrl = audioData;
@@ -387,7 +386,11 @@ function playAudioReliable(audioData) {
           <span style="font-size: 1.5em;">🔊</span>
           <strong style="font-size: 1.1em;">Respuesta de Audio desde N8N</strong>
         </div>
-        <div id="status-${audioId}" style="color: #e8f5e8; font-size: 14px; margin-bottom: 10px;">Preparando audio...</div>
+        <div id="status-${audioId}" style="color: #e8f5e8; font-size: 14px; margin-bottom: 10px;">🔄 Intentando cargar audio...</div>
+        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 10px 0;">
+          <div style="font-size: 12px; color: #b8d4ff; margin-bottom: 8px;">URL del audio:</div>
+          <div style="font-size: 11px; word-break: break-all; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px;">${finalAudioUrl}</div>
+        </div>
         <audio id="audio-${audioId}" controls preload="auto" style="width: 100%; height: 50px; border-radius: 8px; background: rgba(255,255,255,0.1);" crossorigin="anonymous">
           <source src="${finalAudioUrl}" type="audio/mpeg">
           <source src="${finalAudioUrl}" type="audio/mp3">
@@ -395,16 +398,19 @@ function playAudioReliable(audioData) {
           <source src="${finalAudioUrl}" type="audio/ogg">
           Tu navegador no soporta la reproducción de audio.
         </audio>
-        <div id="fallback-${audioId}" style="margin-top: 10px;">
-          <button onclick="window.open('${finalAudioUrl}', '_blank')" style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; margin-right: 10px;">
-            📥 Descargar Audio
+        <div id="fallback-${audioId}" style="margin-top: 15px;">
+          <button onclick="window.open('${finalAudioUrl}', '_blank')" style="background: #4CAF50; color: white; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer; margin-right: 10px; font-size: 14px;">
+            📥 Descargar Audio Directo
           </button>
-          <button onclick="tryDirectPlay('${audioId}', '${finalAudioUrl}')" style="background: #2196F3; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">
-            🔄 Reintentar
+          <button onclick="tryDirectPlay('${audioId}', '${finalAudioUrl}')" style="background: #2196F3; color: white; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer; margin-right: 10px; font-size: 14px;">
+            🔄 Reintentar Carga
+          </button>
+          <button onclick="testAudioUrl('${finalAudioUrl}')" style="background: #FF9800; color: white; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer; font-size: 14px;">
+            🔍 Probar URL
           </button>
         </div>
-        <div style="font-size: 12px; color: #b8d4ff; margin-top: 8px; text-align: center;">
-          ▶️ Si no suena automáticamente, usa los controles de audio
+        <div id="debug-${audioId}" style="font-size: 11px; color: #b8d4ff; margin-top: 10px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px;">
+          🔍 Estado: Iniciando carga...
         </div>
       </div>
     `;
@@ -416,89 +422,152 @@ function playAudioReliable(audioData) {
     // Configurar elemento de audio
     const audioElement = document.getElementById(`audio-${audioId}`);
     const statusElement = document.getElementById(`status-${audioId}`);
+    const debugElement = document.getElementById(`debug-${audioId}`);
     
-    if (!audioElement || !statusElement) {
+    if (!audioElement || !statusElement || !debugElement) {
       console.error('❌ No se pudieron crear los elementos de audio');
       return;
     }
 
-    // Timeout para detectar fallos de carga
+    // Timeout más largo para Google Drive
     const loadTimeout = setTimeout(() => {
-      console.log('⏰ Timeout de carga de audio alcanzado');
-      statusElement.textContent = '⚠️ Problema de carga - Usa los botones de abajo';
+      console.log('⏰ Timeout de carga de audio alcanzado (Google Drive puede ser lento)');
+      statusElement.textContent = '⚠️ Google Drive es lento - Usa descarga directa';
       statusElement.style.color = '#ffeb3b';
-    }, 10000); // 10 segundos
+      debugElement.textContent = '⏰ Timeout: Google Drive bloquea carga directa en navegadores';
+    }, 15000); // 15 segundos para Google Drive
 
-    // Event listeners para monitoreo
+    // Event listeners detallados
     audioElement.addEventListener('loadstart', () => {
-      console.log('🔄 Iniciando carga de audio...');
-      statusElement.textContent = '🔄 Cargando audio desde N8N...';
+      console.log('🔄 EVENTO: loadstart - Iniciando carga...');
+      statusElement.textContent = '🔄 Conectando con Google Drive...';
+      debugElement.textContent = '🔄 Evento: loadstart - Solicitando archivo a Google Drive';
+    });
+
+    audioElement.addEventListener('progress', (e) => {
+      console.log('📊 EVENTO: progress - Descargando...');
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        statusElement.textContent = `📊 Descargando: ${percent}%`;
+        debugElement.textContent = `📊 Progreso: ${e.loaded}/${e.total} bytes (${percent}%)`;
+      } else {
+        statusElement.textContent = '📊 Descargando datos...';
+        debugElement.textContent = '📊 Descargando (tamaño desconocido)';
+      }
+    });
+
+    audioElement.addEventListener('loadedmetadata', () => {
+      console.log('📋 EVENTO: loadedmetadata - Metadatos cargados');
+      statusElement.textContent = '📋 Metadatos cargados';
+      debugElement.textContent = `📋 Duración: ${audioElement.duration}s, Puede reproducir: ${audioElement.readyState}`;
     });
 
     audioElement.addEventListener('loadeddata', () => {
-      console.log('📊 Datos de audio cargados');
-      statusElement.textContent = '📊 Audio cargado - Listo para reproducir';
+      console.log('📊 EVENTO: loadeddata - Datos suficientes cargados');
+      statusElement.textContent = '📊 Datos cargados - Intentando reproducir...';
+      debugElement.textContent = '📊 Datos listos para reproducción';
       clearTimeout(loadTimeout);
       
       // Intentar reproducción automática
       setTimeout(() => {
+        console.log('🎯 Intentando reproducción automática...');
         const playPromise = audioElement.play();
         if (playPromise !== undefined) {
           playPromise
             .then(() => {
-              console.log('🎵 Reproducción automática EXITOSA');
-              statusElement.textContent = '🎵 Reproduciendo respuesta de N8N...';
+              console.log('🎵 ¡ÉXITO! Reproducción automática funcionando');
+              statusElement.textContent = '🎵 ¡Reproduciendo automáticamente!';
+              debugElement.textContent = '✅ Reproducción automática exitosa';
             })
             .catch(error => {
-              console.log('⚠️ Autoplay bloqueado:', error.message);
-              statusElement.textContent = '⚠️ Haz clic en ▶️ para escuchar la respuesta';
+              console.log('⚠️ Autoplay bloqueado por navegador:', error.message);
+              statusElement.textContent = '⚠️ Haz clic en ▶️ para reproducir';
+              debugElement.textContent = `⚠️ Autoplay bloqueado: ${error.message}`;
             });
         }
-      }, 500);
+      }, 800);
     });
 
     audioElement.addEventListener('canplay', () => {
-      console.log('✅ Audio listo para reproducir');
-      statusElement.textContent = '✅ Audio listo para reproducir';
+      console.log('✅ EVENTO: canplay - Listo para reproducir');
+      statusElement.textContent = '✅ Listo para reproducir';
+      debugElement.textContent = '✅ Audio completamente listo';
       clearTimeout(loadTimeout);
     });
 
     audioElement.addEventListener('play', () => {
-      console.log('▶️ Reproducción iniciada');
-      statusElement.textContent = '▶️ Reproduciendo audio...';
+      console.log('▶️ EVENTO: play - Reproducción iniciada');
+      statusElement.textContent = '▶️ Reproduciendo...';
+      debugElement.textContent = '▶️ Reproducción en curso';
+    });
+
+    audioElement.addEventListener('pause', () => {
+      console.log('⏸️ EVENTO: pause - Reproducción pausada');
+      statusElement.textContent = '⏸️ Pausado';
+      debugElement.textContent = '⏸️ Usuario pausó la reproducción';
     });
 
     audioElement.addEventListener('ended', () => {
-      console.log('🏁 Reproducción completada');
+      console.log('🏁 EVENTO: ended - Reproducción completada');
       statusElement.textContent = '🏁 Reproducción completada ✅';
+      debugElement.textContent = '🏁 Audio terminado correctamente';
     });
 
     audioElement.addEventListener('error', (e) => {
-      console.error('❌ Error de audio:', e);
-      console.error('❌ Código de error:', audioElement.error?.code);
-      console.error('❌ Mensaje de error:', audioElement.error?.message);
+      console.error('❌ EVENTO: error - Error crítico de audio');
+      console.error('❌ Error object:', audioElement.error);
+      console.error('❌ Event:', e);
       clearTimeout(loadTimeout);
       
-      let errorMsg = 'Error de carga';
+      let errorMsg = 'Error desconocido';
+      let debugMsg = 'Error sin detalles';
+      
       if (audioElement.error) {
         switch(audioElement.error.code) {
-          case 1: errorMsg = 'Descarga abortada'; break;
-          case 2: errorMsg = 'Error de red - Usa el botón de descarga'; break;
-          case 3: errorMsg = 'Error de decodificación'; break;
-          case 4: errorMsg = 'Formato no soportado'; break;
+          case 1: 
+            errorMsg = 'Descarga abortada por usuario'; 
+            debugMsg = 'MEDIA_ERR_ABORTED: Usuario canceló';
+            break;
+          case 2: 
+            errorMsg = 'Error de red - Google Drive bloqueó acceso'; 
+            debugMsg = 'MEDIA_ERR_NETWORK: Google Drive CORS/bloqueo';
+            break;
+          case 3: 
+            errorMsg = 'Error de decodificación del audio'; 
+            debugMsg = 'MEDIA_ERR_DECODE: Archivo corrupto o formato malo';
+            break;
+          case 4: 
+            errorMsg = 'Formato de audio no soportado'; 
+            debugMsg = 'MEDIA_ERR_SRC_NOT_SUPPORTED: Formato no compatible';
+            break;
         }
       }
+      
       statusElement.textContent = `❌ ${errorMsg}`;
       statusElement.style.color = '#ffcccb';
+      debugElement.textContent = `❌ ${debugMsg}`;
+      debugElement.style.color = '#ffcccb';
+    });
+
+    audioElement.addEventListener('stalled', () => {
+      console.log('🐌 EVENTO: stalled - Descarga estancada');
+      statusElement.textContent = '🐌 Conexión lenta...';
+      debugElement.textContent = '🐌 Descarga estancada - Google Drive limitando velocidad';
+    });
+
+    audioElement.addEventListener('suspend', () => {
+      console.log('⏸️ EVENTO: suspend - Descarga suspendida');
+      debugElement.textContent = '⏸️ Navegador suspendió descarga para ahorrar ancho de banda';
     });
 
     // Forzar carga del audio
-    console.log('🚀 Forzando carga del audio...');
+    console.log('🚀 Forzando carga del audio desde Google Drive...');
+    debugElement.textContent = '🚀 Iniciando carga forzada...';
     audioElement.load();
 
   } catch (error) {
     console.error('❌ Error crítico en playAudioReliable:', error);
-    appendMessage('Sistema', `❌ Error al procesar audio: ${error.message}`);
+    appendMessage('Sistema', `❌ Error crítico al procesar audio: ${error.message}`);
   }
 }
 
@@ -506,22 +575,99 @@ function playAudioReliable(audioData) {
 window.tryDirectPlay = function(audioId, url) {
   const audioElement = document.getElementById(`audio-${audioId}`);
   const statusElement = document.getElementById(`status-${audioId}`);
+  const debugElement = document.getElementById(`debug-${audioId}`);
   
   if (audioElement && statusElement) {
-    statusElement.textContent = '🔄 Reintentando...';
+    console.log('🔄 Reintentando carga manual de audio...');
+    statusElement.textContent = '🔄 Reintentando carga...';
+    debugElement.textContent = '🔄 Recargando archivo desde Google Drive...';
+    
     audioElement.src = url;
     audioElement.load();
     
     setTimeout(() => {
       audioElement.play()
         .then(() => {
-          statusElement.textContent = '✅ Reproduciendo con éxito';
+          console.log('✅ Reintento exitoso');
+          statusElement.textContent = '✅ ¡Reintento exitoso!';
+          debugElement.textContent = '✅ Carga manual funcionó';
         })
-        .catch(() => {
-          statusElement.textContent = '❌ Reintento fallido - Usa descarga';
+        .catch((error) => {
+          console.log('❌ Reintento falló:', error.message);
+          statusElement.textContent = '❌ Reintento fallido';
+          debugElement.textContent = `❌ Reintento falló: ${error.message}`;
         });
-    }, 1000);
+    }, 1500);
   }
+};
+
+// Función para probar la URL directamente
+window.testAudioUrl = function(url) {
+  console.log('🔍 Probando URL de audio directamente:', url);
+  
+  // Crear ventana de prueba
+  const testWindow = window.open('', '_blank', 'width=600,height=400');
+  testWindow.document.write(`
+    <html>
+      <head><title>Prueba de Audio - Google Drive</title></head>
+      <body style="font-family: Arial; padding: 20px; background: #f0f0f0;">
+        <h2>🔍 Prueba de URL de Audio</h2>
+        <p><strong>URL:</strong> <code style="word-break: break-all;">${url}</code></p>
+        <p>🔄 <strong>Intentando cargar audio...</strong></p>
+        <audio controls style="width: 100%; margin: 20px 0;" preload="auto">
+          <source src="${url}" type="audio/mpeg">
+          <source src="${url}" type="audio/mp3">
+          <source src="${url}" type="audio/wav">
+          Tu navegador no soporta este audio.
+        </audio>
+        <div id="status">⏳ Cargando...</div>
+        <hr style="margin: 20px 0;">
+        <h3>📊 Información de Debug:</h3>
+        <div id="debug" style="background: #fff; padding: 10px; border-radius: 5px; font-size: 12px;"></div>
+        <button onclick="window.close()" style="background: #f44336; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin-top: 20px; cursor: pointer;">Cerrar</button>
+        
+        <script>
+          const audio = document.querySelector('audio');
+          const status = document.getElementById('status');
+          const debug = document.getElementById('debug');
+          
+          let debugInfo = [];
+          
+          function addDebug(msg) {
+            debugInfo.push(new Date().toLocaleTimeString() + ': ' + msg);
+            debug.innerHTML = debugInfo.join('<br>');
+          }
+          
+          audio.addEventListener('loadstart', () => {
+            status.textContent = '🔄 Iniciando carga...';
+            addDebug('loadstart - Comenzando carga');
+          });
+          
+          audio.addEventListener('loadeddata', () => {
+            status.textContent = '✅ Audio cargado correctamente';
+            addDebug('loadeddata - Audio listo para reproducir');
+          });
+          
+          audio.addEventListener('error', (e) => {
+            status.textContent = '❌ Error al cargar audio';
+            addDebug('ERROR: ' + (audio.error ? audio.error.code + ' - ' + audio.error.message : 'Error desconocido'));
+          });
+          
+          audio.addEventListener('play', () => {
+            status.textContent = '▶️ Reproduciendo...';
+            addDebug('play - Reproducción iniciada');
+          });
+          
+          audio.addEventListener('ended', () => {
+            status.textContent = '🏁 Reproducción completada';
+            addDebug('ended - Audio terminado');
+          });
+          
+          addDebug('Iniciando prueba de URL de Google Drive');
+        </script>
+      </body>
+    </html>
+  `);
 };
 
 // --- Inicializar la aplicación ---
