@@ -62,6 +62,7 @@ manualLoginForm.addEventListener('submit', async (e) => {
 
   showMainApp();
   updateUserUI();
+  addTestButton(); // Agregar botón de prueba después del login
 });
 
 // --- LLAMADAS API LOCAL EXPRESS ---
@@ -373,6 +374,29 @@ function toggleRecording() {
   }
 }
 
+// --- FUNCIÓN DE PRUEBA DE AUDIO ---
+function testAudioPlayback() {
+  console.log('🧪 Probando reproducción de audio...');
+  // Audio de prueba (ejemplo)
+  const testAudioData = 'data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAА1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsQAAAAAADSAAAAAVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV';
+  
+  appendMessage('Sistema', '🧪 Probando audio de ejemplo...');
+  playAudioFromData(testAudioData);
+}
+
+// Agregar botón de prueba después del login
+function addTestButton() {
+  const chatContainer = document.getElementById('chat-container');
+  if (chatContainer && !document.getElementById('test-audio-btn')) {
+    const testBtn = document.createElement('button');
+    testBtn.id = 'test-audio-btn';
+    testBtn.textContent = '🧪 Probar Audio';
+    testBtn.style.cssText = 'margin: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer;';
+    testBtn.onclick = testAudioPlayback;
+    chatContainer.insertBefore(testBtn, chatContainer.firstChild);
+  }
+}
+
 // --- Inicializar la aplicación ---
 document.addEventListener('DOMContentLoaded', () => {
   showLoginScreen();
@@ -426,8 +450,19 @@ if (chatForm) {
       // --- Compatibilidad con respuesta anidada tipo [{output: { ... }}] ---
       const _out = Array.isArray(data) && data.length && data[0] ? data[0] : data;
 
-      // ---- DEBUGGING: Verificar todos los campos de la respuesta ----
-      console.log('🔍 Analizando respuesta completa para audio:', JSON.stringify(_out, null, 2));
+      // ---- DEBUGGING COMPLETO: Verificar estructura completa ----
+      console.log('🔍 Respuesta RAW de N8N:', JSON.stringify(data, null, 2));
+      console.log('🔍 Respuesta procesada (_out):', JSON.stringify(_out, null, 2));
+      console.log('🔍 Campos disponibles en _out:', Object.keys(_out || {}));
+      
+      // Verificar TODOS los posibles campos de audio
+      const audioFields = ['data', 'audio', 'audioData', 'sound', 'voice', 'audio_data', 'audioUrl', 'audio_url', 'file', 'attachment', 'media'];
+      audioFields.forEach(field => {
+        if (_out && _out[field]) {
+          console.log(`📊 Campo "${field}" encontrado:`, typeof _out[field], 
+            typeof _out[field] === 'string' ? _out[field].substring(0, 100) + '...' : _out[field]);
+        }
+      });
       
       // ---- Reproducir audio si viene en la respuesta ----
       if (_out && _out.data) {
