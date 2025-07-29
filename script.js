@@ -383,35 +383,37 @@ function playAudioReliable(audioData) {
     audioContainer.innerHTML = `
       <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 15px; margin: 15px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-          <span style="font-size: 1.5em;">🔊</span>
-          <strong style="font-size: 1.1em;">Respuesta de Audio desde N8N</strong>
+          <span style="font-size: 1.5em;">🎵</span>
+          <strong style="font-size: 1.1em;">Respuesta de Audio</strong>
         </div>
-        <div id="status-${audioId}" style="color: #e8f5e8; font-size: 14px; margin-bottom: 10px;">🔄 Intentando cargar audio...</div>
-        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 10px 0;">
-          <div style="font-size: 12px; color: #b8d4ff; margin-bottom: 8px;">URL del audio:</div>
-          <div style="font-size: 11px; word-break: break-all; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px;">${finalAudioUrl}</div>
+        <div style="background: #ff6b35; color: white; padding: 12px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #ff4757;">
+          <div style="font-weight: bold; margin-bottom: 5px;">⚠️ Google Drive no permite reproducción directa</div>
+          <div style="font-size: 13px;">Los navegadores bloquean la reproducción automática desde Google Drive por seguridad. Usa los botones de abajo.</div>
         </div>
-        <audio id="audio-${audioId}" controls preload="auto" style="width: 100%; height: 50px; border-radius: 8px; background: rgba(255,255,255,0.1);" crossorigin="anonymous">
-          <source src="${finalAudioUrl}" type="audio/mpeg">
-          <source src="${finalAudioUrl}" type="audio/mp3">
-          <source src="${finalAudioUrl}" type="audio/wav">
-          <source src="${finalAudioUrl}" type="audio/ogg">
-          Tu navegador no soporta la reproducción de audio.
-        </audio>
-        <div id="fallback-${audioId}" style="margin-top: 15px;">
-          <button onclick="window.open('${finalAudioUrl}', '_blank')" style="background: #4CAF50; color: white; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer; margin-right: 10px; font-size: 14px;">
-            📥 Descargar Audio Directo
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: 15px 0;">
+          <button onclick="window.open('${finalAudioUrl}', '_blank')" style="background: #28a745; color: white; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; flex: 1; min-width: 140px;">
+            🎧 Escuchar Audio
           </button>
-          <button onclick="tryDirectPlay('${audioId}', '${finalAudioUrl}')" style="background: #2196F3; color: white; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer; margin-right: 10px; font-size: 14px;">
-            🔄 Reintentar Carga
-          </button>
-          <button onclick="testAudioUrl('${finalAudioUrl}')" style="background: #FF9800; color: white; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer; font-size: 14px;">
-            🔍 Probar URL
+          <button onclick="downloadAudio('${finalAudioUrl}')" style="background: #007bff; color: white; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; flex: 1; min-width: 140px;">
+            📥 Descargar MP3
           </button>
         </div>
-        <div id="debug-${audioId}" style="font-size: 11px; color: #b8d4ff; margin-top: 10px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px;">
-          🔍 Estado: Iniciando carga...
+        <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; margin: 10px 0;">
+          <div style="font-size: 12px; color: #b8d4ff; margin-bottom: 8px;">💡 <strong>Cómo escuchar:</strong></div>
+          <div style="font-size: 13px; line-height: 1.4;">
+            1. Haz clic en <strong>"🎧 Escuchar Audio"</strong> - se abrirá Google Drive<br>
+            2. En la página de Google Drive, haz clic en el botón de reproducir<br>
+            3. O descarga el archivo con <strong>"📥 Descargar MP3"</strong>
+          </div>
         </div>
+        <details style="margin-top: 10px;">
+          <summary style="cursor: pointer; font-size: 12px; color: #b8d4ff;">🔍 Información técnica</summary>
+          <div style="font-size: 11px; color: #d0d0d0; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px;">
+            <strong>URL:</strong> ${finalAudioUrl}<br>
+            <strong>Problema:</strong> Google Drive bloquea reproducción directa en navegadores<br>
+            <strong>Solución:</strong> Usar el botón "Escuchar Audio" para abrir en Google Drive
+          </div>
+        </details>
       </div>
     `;
 
@@ -602,6 +604,22 @@ window.tryDirectPlay = function(audioId, url) {
 };
 
 // Función para probar la URL directamente
+// Función para descargar audio
+window.downloadAudio = function(url) {
+  console.log('📥 Iniciando descarga de audio:', url);
+  
+  // Crear elemento de descarga temporal
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `audio_respuesta_${Date.now()}.mp3`;
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  
+  console.log('✅ Descarga iniciada');
+};
+
 window.testAudioUrl = function(url) {
   console.log('🔍 Probando URL de audio directamente:', url);
   
