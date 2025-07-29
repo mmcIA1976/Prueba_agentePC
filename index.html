@@ -164,7 +164,7 @@
 
     // --- Generar ID único de chat ---
     function generateChatId() {
-      return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      return ${Date.now()}_${Math.random().toString(36).substr(2, 9)};
     }
 
     // --- Mostrar pantalla de login ---
@@ -184,7 +184,7 @@
     function updateUserUI() {
       if (currentUser) {
         document.getElementById('user-avatar').src =
-          `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(currentUser.name)}`;
+          https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(currentUser.name)};
         document.getElementById('user-name').textContent = currentUser.name || 'Usuario';
       }
     }
