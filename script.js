@@ -156,9 +156,20 @@ function initializeVAPI() {
   
   console.log(`🔄 Intento ${vapiRetryCount} de inicializar VAPI...`);
   
+  // Si ya sabemos que VAPI falló en cargar, no seguir intentando
+  if (window.vapiLoadFailed) {
+    console.log('❌ SDK de VAPI no se pudo cargar después de varios intentos');
+    showVoiceUnavailable();
+    return;
+  }
+  
   // Verificar diferentes formas en que VAPI puede estar disponible
-  const vapiConstructor = window.Vapi || window.VapiSDK || (window.VapiWeb && window.VapiWeb.Vapi);
-  console.log('🔍 Verificando VAPI disponible:', !!vapiConstructor, typeof vapiConstructor);
+  const vapiConstructor = window.Vapi || 
+                          window.VapiSDK || 
+                          (window.VapiWeb && window.VapiWeb.Vapi) ||
+                          (window.VapiAI && window.VapiAI.Vapi);
+  
+  console.log('🔍 Verificando:', typeof vapiConstructor, !!vapiConstructor);
   
   if (vapiConstructor && typeof vapiConstructor === 'function') {
     try {
@@ -299,11 +310,17 @@ document.addEventListener('DOMContentLoaded', () => {
     updateMicButton(); // Inicial styling
   }
   
-  // Inicializar VAPI cuando se carga la página (más tiempo en deploy)
-  const delay = isDeploy ? 3000 : 1500;
+  // Inicializar VAPI cuando se carga la página - más tiempo para cargar el SDK
+  const delay = isDeploy ? 5000 : 2000;
   setTimeout(() => {
     console.log('🚀 Iniciando carga de VAPI...');
-    initializeVAPI();
+    // Verificar si el SDK se cargó correctamente
+    if (window.vapiLoaded || window.Vapi) {
+      initializeVAPI();
+    } else {
+      // Si no se cargó, esperar un poco más y reintentar
+      setTimeout(initializeVAPI, 2000);
+    }
   }, delay);
 });
 
