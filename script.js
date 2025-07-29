@@ -378,35 +378,38 @@ function toggleRecording() {
 function testAudioPlayback() {
   console.log('🧪 Probando reproducción de audio...');
   
-  // Generar un beep de prueba usando Web Audio API
   try {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
+    // Crear un audio de prueba simple con HTML5
+    const testAudio = document.createElement('audio');
+    testAudio.preload = 'auto';
     
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
+    // URL de un audio de prueba público y corto (notification sound)
+    testAudio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSyO0/DMdiMFl3bK7+ONQQ0VYLXn57BdGQU+ltryxnkpBSl+zO7eizEJEV2w5OWlUBELUKXh77BdGAY9k9n0unkoAAA=';
     
-    oscillator.frequency.value = 800; // 800Hz beep
-    oscillator.type = 'sine';
+    testAudio.volume = 0.5;
     
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+    testAudio.addEventListener('canplaythrough', () => {
+      console.log('✅ Audio de prueba cargado correctamente');
+      testAudio.play().then(() => {
+        console.log('✅ Prueba de audio HTML5 exitosa');
+        appendMessage('Sistema', '🧪 ✅ Prueba de audio exitosa - Deberías escuchar un sonido');
+      }).catch(error => {
+        console.error('❌ Error reproduciendo audio de prueba:', error);
+        appendMessage('Sistema', '❌ Error en reproducción de prueba: ' + error.message);
+      });
+    });
     
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.5);
+    testAudio.addEventListener('error', (e) => {
+      console.error('❌ Error cargando audio de prueba:', e);
+      appendMessage('Sistema', '❌ Error cargando audio de prueba');
+    });
     
-    appendMessage('Sistema', '🧪 ✅ Prueba de audio exitosa - Deberías escuchar un beep');
-    console.log('✅ Prueba de audio Web Audio API exitosa');
+    // Cargar el audio
+    testAudio.load();
     
   } catch (error) {
     console.error('❌ Error en prueba de audio:', error);
-    appendMessage('Sistema', '❌ Error en la prueba de audio: ' + error.message);
-    
-    // Fallback: crear audio de prueba simple
-    const testAudio = document.createElement('audio');
-    testAudio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSyO0/DMdiMFl3bK7+ONQQ0VYLXn57BdGQU+ltryxnkpBSl+zO7eizEJEV2w5OWlUBELUKXh77BdGAY9k9n0unkoAAA=';
-    testAudio.play().catch(e => console.error('Error en audio fallback:', e));
+    appendMessage('Sistema', '❌ Error general en la prueba de audio: ' + error.message);
   }
 }
 
@@ -588,10 +591,10 @@ function hideLoadingSpinner() {
   }
 }
 
-// --- REPRODUCIR AUDIO DESDE DATA CON WEB AUDIO API ---
+// --- REPRODUCIR AUDIO DESDE DATA CON FALLBACK HTML5 ---
 function playAudioFromData(audioData) {
   try {
-    console.log('🎵 Iniciando reproducción de audio con Web Audio API...');
+    console.log('🎵 Iniciando reproducción de audio...');
     console.log('📊 Longitud de datos:', audioData ? audioData.length : 0);
 
     // Validar que tenemos datos de audio válidos
@@ -608,39 +611,35 @@ function playAudioFromData(audioData) {
       return;
     }
 
-    // Extraer solo los datos base64 (sin el prefijo data:audio/mpeg;base64,)
-    const base64Data = audioData.split(',')[1];
-    if (!base64Data) {
-      console.error('❌ No se pudo extraer datos base64');
-      appendMessage('Sistema', '❌ Error en formato de datos de audio');
-      return;
-    }
+    console.log('✅ Formato de audio detectado:', audioData.substring(5, audioData.indexOf(';')));
 
-    // Convertir base64 a ArrayBuffer
-    const binaryString = atob(base64Data);
-    const arrayBuffer = new ArrayBuffer(binaryString.length);
-    const uint8Array = new Uint8Array(arrayBuffer);
-    for (let i = 0; i < binaryString.length; i++) {
-      uint8Array[i] = binaryString.charCodeAt(i);
-    }
-
-    console.log('🔧 Datos convertidos a ArrayBuffer:', arrayBuffer.byteLength, 'bytes');
-
-    // Crear controles de audio con Web Audio API
+    // Crear controles de audio HTML5 (más compatible con MP3)
     const audioContainer = document.createElement('div');
     audioContainer.className = 'audio-player-container';
     
     const audioId = 'audio_' + Date.now();
+    const sizeKB = Math.round((audioData.length * 0.75) / 1024); // Estimación del tamaño
+    
     audioContainer.innerHTML = `
       <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 10px 0; border: 2px solid #4CAF50;">
         🔊 <strong>Respuesta de Audio:</strong><br>
+        <div style="margin: 10px 0;">
+          <audio id="html-audio-${audioId}" controls style="width: 100%; max-width: 400px;">
+            <source src="${audioData}" type="audio/mpeg">
+            Tu navegador no soporta el elemento de audio.
+          </audio>
+        </div>
         <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
-          <button id="play-btn-${audioId}" onclick="playWebAudio('${audioId}')" 
+          <button id="play-btn-${audioId}" onclick="playHtmlAudio('${audioId}')" 
                   style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
-            ▶️ Reproducir Audio
+            ▶️ Reproducir
           </button>
-          <button id="stop-btn-${audioId}" onclick="stopWebAudio('${audioId}')" 
-                  style="background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; display: none;">
+          <button id="pause-btn-${audioId}" onclick="pauseHtmlAudio('${audioId}')" 
+                  style="background: #ff9500; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+            ⏸️ Pausar
+          </button>
+          <button id="stop-btn-${audioId}" onclick="stopHtmlAudio('${audioId}')" 
+                  style="background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
             ⏹️ Detener
           </button>
           <div id="status-${audioId}" style="margin-left: 10px; font-size: 12px; color: #666;">
@@ -648,7 +647,7 @@ function playAudioFromData(audioData) {
           </div>
         </div>
         <div style="margin-top: 8px; font-size: 12px; color: #666;">
-          Formato: MP3 | Tamaño: ${Math.round(arrayBuffer.byteLength / 1024)}KB
+          Formato: MP3 | Tamaño: ~${sizeKB}KB
         </div>
       </div>
     `;
@@ -657,99 +656,92 @@ function playAudioFromData(audioData) {
     chatLog.appendChild(audioContainer);
     chatLog.scrollTop = chatLog.scrollHeight;
 
-    // Almacenar los datos de audio globalmente para acceso desde botones
-    window.audioBuffers = window.audioBuffers || {};
-    window.audioSources = window.audioSources || {};
-    window.audioBuffers[audioId] = arrayBuffer;
-
-    // Crear funciones globales para control con Web Audio API
-    window.playWebAudio = async function(audioId) {
+    // Crear funciones globales para control de HTML5 Audio
+    window.playHtmlAudio = function(audioId) {
       try {
-        const playBtn = document.getElementById(`play-btn-${audioId}`);
-        const stopBtn = document.getElementById(`stop-btn-${audioId}`);
+        const audio = document.getElementById(`html-audio-${audioId}`);
         const status = document.getElementById(`status-${audioId}`);
         
-        if (!window.audioBuffers[audioId]) {
-          console.error('❌ No hay datos de audio para reproducir');
+        if (!audio) {
+          console.error('❌ Elemento de audio no encontrado');
           return;
         }
 
-        status.textContent = 'Procesando audio...';
-        
-        // Crear contexto de audio
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        
-        // Decodificar el audio
-        const audioBuffer = await audioContext.decodeAudioData(window.audioBuffers[audioId].slice(0));
-        
-        console.log('✅ Audio decodificado:', audioBuffer.duration, 'segundos');
-        
-        // Crear fuente de audio
-        const source = audioContext.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioContext.destination);
-        
-        // Almacenar referencia para poder detenerlo
-        window.audioSources[audioId] = source;
-        
-        // Configurar callbacks
-        source.onended = () => {
-          console.log('🏁 Reproducción terminada');
-          playBtn.style.display = 'inline-block';
-          stopBtn.style.display = 'none';
-          status.textContent = 'Reproducción completada';
-          delete window.audioSources[audioId];
-        };
-        
-        // Iniciar reproducción
-        source.start(0);
-        
-        playBtn.style.display = 'none';
-        stopBtn.style.display = 'inline-block';
         status.textContent = 'Reproduciendo...';
         
-        console.log('🎵 ✅ Reproducción iniciada con Web Audio API');
-        appendMessage('Sistema', '🎵 ¡Audio reproduciéndose! Debería escucharse ahora');
+        audio.play().then(() => {
+          console.log('✅ Reproducción iniciada con HTML5 Audio');
+          appendMessage('Sistema', '🎵 ¡Audio reproduciéndose correctamente!');
+        }).catch(error => {
+          console.error('❌ Error al reproducir HTML5 Audio:', error);
+          status.textContent = `Error: ${error.message}`;
+          appendMessage('Sistema', `❌ Error de reproducción: ${error.message}`);
+        });
         
       } catch (error) {
-        console.error('❌ Error en reproducción Web Audio:', error);
-        appendMessage('Sistema', `❌ Error al reproducir audio: ${error.message}`);
-        
-        const status = document.getElementById(`status-${audioId}`);
-        if (status) status.textContent = `Error: ${error.message}`;
+        console.error('❌ Error en playHtmlAudio:', error);
+        appendMessage('Sistema', `❌ Error al controlar audio: ${error.message}`);
       }
     };
 
-    window.stopWebAudio = function(audioId) {
+    window.pauseHtmlAudio = function(audioId) {
       try {
-        const playBtn = document.getElementById(`play-btn-${audioId}`);
-        const stopBtn = document.getElementById(`stop-btn-${audioId}`);
+        const audio = document.getElementById(`html-audio-${audioId}`);
         const status = document.getElementById(`status-${audioId}`);
         
-        if (window.audioSources[audioId]) {
-          window.audioSources[audioId].stop();
-          delete window.audioSources[audioId];
+        if (audio) {
+          audio.pause();
+          status.textContent = 'Pausado';
+          console.log('⏸️ Audio pausado');
         }
+      } catch (error) {
+        console.error('❌ Error al pausar audio:', error);
+      }
+    };
+
+    window.stopHtmlAudio = function(audioId) {
+      try {
+        const audio = document.getElementById(`html-audio-${audioId}`);
+        const status = document.getElementById(`status-${audioId}`);
         
-        playBtn.style.display = 'inline-block';
-        stopBtn.style.display = 'none';
-        status.textContent = 'Detenido';
-        
-        console.log('⏹️ Audio detenido');
-        appendMessage('Sistema', '⏹️ Audio detenido manualmente');
-        
+        if (audio) {
+          audio.pause();
+          audio.currentTime = 0;
+          status.textContent = 'Detenido';
+          console.log('⏹️ Audio detenido');
+        }
       } catch (error) {
         console.error('❌ Error al detener audio:', error);
       }
     };
 
-    // Intentar reproducción automática
+    // Configurar eventos del elemento audio
+    const audioElement = document.getElementById(`html-audio-${audioId}`);
+    if (audioElement) {
+      audioElement.addEventListener('loadeddata', () => {
+        console.log('✅ Audio cargado correctamente');
+        document.getElementById(`status-${audioId}`).textContent = 'Audio cargado - Listo';
+      });
+
+      audioElement.addEventListener('error', (e) => {
+        console.error('❌ Error cargando audio:', e);
+        document.getElementById(`status-${audioId}`).textContent = 'Error al cargar audio';
+        appendMessage('Sistema', '❌ Error al cargar el audio. Verifica el formato.');
+      });
+
+      audioElement.addEventListener('ended', () => {
+        console.log('🏁 Reproducción terminada');
+        document.getElementById(`status-${audioId}`).textContent = 'Reproducción completada';
+      });
+    }
+
+    // Intentar reproducción automática después de un breve delay
     setTimeout(() => {
       console.log('🚀 Intentando reproducción automática...');
-      window.playWebAudio(audioId);
-    }, 500);
+      window.playHtmlAudio(audioId);
+    }, 1000);
 
-    appendMessage('Sistema', '🔊 Audio procesado con Web Audio API - Reproduciendo automáticamente...');
+    appendMessage('Sistema', '🔊 Audio procesado con HTML5 - Reproduciendo automáticamente...');
 
   } catch (error) {
     console.error('❌ Error en playAudioFromData:', error);
