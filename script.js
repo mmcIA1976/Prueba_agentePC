@@ -144,171 +144,152 @@ async function saveMessageToDB(author, content) {
   }
 }
 
-// --- VAPI Integration ---
-let vapi = null;
+// --- Voice Recognition Integration ---
+let recognition = null;
 let isRecording = false;
 
-let vapiRetryCount = 0;
-const maxVapiRetries = 5;
-
-function initializeVAPI() {
-  vapiRetryCount++;
+function initializeVoiceRecognition() {
+  console.log('🎤 Inicializando reconocimiento de voz...');
   
-  console.log(`🔄 Intento ${vapiRetryCount} de inicializar VAPI...`);
-  
-  // Si ya sabemos que VAPI falló en cargar, no seguir intentando
-  if (window.vapiLoadFailed) {
-    console.log('❌ SDK de VAPI no se pudo cargar después de varios intentos');
-    showVoiceUnavailable();
-    return;
-  }
-  
-  // El SDK puede estar disponible como Vapi, VapiSDK, o en window.VapiAI
-  const vapiConstructor = window.Vapi || window.VapiSDK || (window.VapiAI && window.VapiAI.Vapi);
-  
-  console.log('🔍 Verificando VAPI:', typeof vapiConstructor, !!vapiConstructor, Object.keys(window).filter(k => k.toLowerCase().includes('vapi')));
-  
-  if (vapiConstructor && typeof vapiConstructor === 'function') {
-    try {
-      console.log('📡 VAPI SDK detectado, inicializando...');
-      vapi = new vapiConstructor("b7395881-a803-4c64-97c2-2e167ad1633c");
+  // Verificar si Web Speech API está disponible
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'es-ES';
+    
+    recognition.onstart = () => {
+      console.log('🎤 Reconocimiento de voz iniciado');
+      isRecording = true;
+      updateMicButton();
+      appendMessage('Sistema', '🎤 Escuchando... Habla ahora');
+    };
+    
+    recognition.onresult = (event) => {
+      let finalTranscript = '';
       
-      console.log('✅ VAPI inicializado correctamente');
-      vapiRetryCount = 0; // Reset counter
-
-      // Eventos de VAPI
-      vapi.on('call-start', () => {
-        console.log('Llamada iniciada');
-        isRecording = true;
-        updateMicButton();
-        appendMessage('Sistema', '🎤 Conversación iniciada...');
-      });
-
-      vapi.on('call-end', () => {
-        console.log('Llamada terminada');
-        isRecording = false;
-        updateMicButton();
-        appendMessage('Sistema', '📞 Conversación terminada');
-      });
-
-      vapi.on('speech-start', () => {
-        console.log('Usuario empezó a hablar');
-      });
-
-      vapi.on('speech-end', () => {
-        console.log('Usuario terminó de hablar');
-      });
-
-      vapi.on('message', (message) => {
-        console.log('Mensaje VAPI:', message);
-        
-        if (message.type === 'transcript' && message.transcriptType === 'final') {
-          if (message.transcript) {
-            appendMessage('Tú', message.transcript);
-            saveMessageToDB('Tú', message.transcript);
-          }
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
         }
-        
-        if (message.type === 'function-call') {
-          console.log('Function call:', message);
-        }
-        
-        if (message.type === 'conversation-update') {
-          console.log('Conversation update:', message);
-        }
-      });
-
-      vapi.on('error', (error) => {
-        console.error('Error VAPI:', error);
-        appendMessage('Sistema', `❌ Error: ${error.message || 'Error de conexión'}`);
-        isRecording = false;
-        updateMicButton();
-      });
-
-    } catch (error) {
-      console.error('❌ Error al inicializar VAPI:', error);
-      if (vapiRetryCount < maxVapiRetries) {
-        console.log(`🔄 Reintentando en 2 segundos... (${vapiRetryCount}/${maxVapiRetries})`);
-        setTimeout(initializeVAPI, 2000);
-      } else {
-        console.error('❌ VAPI no pudo inicializarse');
-        showVoiceUnavailable();
       }
-    }
-  } else if (vapiRetryCount < maxVapiRetries) {
-    console.log(`⏳ SDK de VAPI no detectado, reintentando... (${vapiRetryCount}/${maxVapiRetries})`);
-    setTimeout(initializeVAPI, 2000);
+      
+      if (finalTranscript.trim()) {
+        console.log('📝 Transcripción final:', finalTranscript);
+        appendMessage('Tú', finalTranscript.trim());
+        saveMessageToDB('Tú', finalTranscript.trim());
+        
+        // Enviar automáticamente el mensaje transcrito
+        sendTranscribedMessage(finalTranscript.trim());
+      }
+    };
+    
+    recognition.onerror = (event) => {
+      console.error('❌ Error en reconocimiento de voz:', event.error);
+      isRecording = false;
+      updateMicButton();
+      
+      let errorMsg = 'Error en el reconocimiento de voz';
+      switch(event.error) {
+        case 'no-speech':
+          errorMsg = 'No se detectó voz. Intenta hablar más claro.';
+          break;
+        case 'audio-capture':
+          errorMsg = 'No se pudo acceder al micrófono.';
+          break;
+        case 'not-allowed':
+          errorMsg = 'Permisos de micrófono denegados.';
+          break;
+      }
+      appendMessage('Sistema', `❌ ${errorMsg}`);
+    };
+    
+    recognition.onend = () => {
+      console.log('⏹️ Reconocimiento de voz terminado');
+      isRecording = false;
+      updateMicButton();
+      appendMessage('Sistema', '⏹️ Reconocimiento de voz detenido');
+    };
+    
+    console.log('✅ Reconocimiento de voz configurado correctamente');
+    setupVoiceButton();
+    
   } else {
-    console.error('❌ SDK de VAPI no disponible');
-    console.log('ℹ️ Esto es normal en el entorno de preview de Replit');
+    console.log('❌ Web Speech API no disponible en este navegador');
     showVoiceUnavailable();
   }
 }
 
-// Función para mostrar que la voz no está disponible
-function showVoiceUnavailable() {
-  console.log('📢 VAPI no disponible, intentando grabación nativa...');
-  
-  // Intentar usar grabación nativa del navegador como fallback
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    console.log('🎤 Usando grabación nativa del navegador');
-    setupNativeRecording();
-  } else {
-    console.log('📢 Función de voz no disponible, deshabilitando micrófono');
-    const micButton = document.getElementById('mic-button');
-    if (micButton) {
-      micButton.style.opacity = '0.5';
-      micButton.style.cursor = 'not-allowed';
-      micButton.title = 'Función de voz no disponible en este entorno';
-    }
-  }
-}
-
-// Grabación nativa como fallback
-let mediaRecorder = null;
-let audioChunks = [];
-
-function setupNativeRecording() {
+function setupVoiceButton() {
   const micButton = document.getElementById('mic-button');
   if (micButton) {
     micButton.style.opacity = '1';
     micButton.style.cursor = 'pointer';
-    micButton.title = 'Grabar audio (fallback)';
+    micButton.title = 'Hablar (reconocimiento de voz)';
   }
 }
 
-async function startNativeRecording() {
+function showVoiceUnavailable() {
+  console.log('📢 Función de voz no disponible');
+  const micButton = document.getElementById('mic-button');
+  if (micButton) {
+    micButton.style.opacity = '0.5';
+    micButton.style.cursor = 'not-allowed';
+    micButton.title = 'Función de voz no disponible en este navegador';
+  }
+}
+
+// Función para enviar mensaje transcrito automáticamente
+async function sendTranscribedMessage(message) {
+  if (!message.trim()) return;
+  
+  showLoadingSpinner();
+  
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    audioChunks = [];
+    console.log('Enviando mensaje transcrito a N8N:', message);
+    const response = await fetch(N8N_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mensaje: message,
+        user_id: currentUser ? currentUser.id : null,
+        chat_id: chatId,
+        user_name: currentUser ? currentUser.name : 'Usuario'
+      })
+    });
+    
+    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+    const data = await response.json();
+    
+    hideLoadingSpinner();
 
-    mediaRecorder.ondataavailable = (event) => {
-      audioChunks.push(event.data);
-    };
+    // Procesar respuesta igual que en el chat normal
+    const _out = Array.isArray(data) && data.length && data[0].output ? data[0].output : data;
 
-    mediaRecorder.onstop = () => {
-      const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-      appendMessage('Sistema', '🎤 Audio grabado (funcionalidad básica). Para transcripción completa, VAPI necesita estar disponible.');
-      stream.getTracks().forEach(track => track.stop());
-    };
+    if (_out && _out.isConfigFinal === true && _out.config_final) {
+      renderConfiguracion(_out.config_final);
+    } else {
+      configContainer.innerHTML = '';
+    }
 
-    mediaRecorder.start();
-    isRecording = true;
-    updateMicButton();
-    appendMessage('Sistema', '🎤 Grabando audio...');
+    if (_out.output && typeof _out.output === "string") {
+      appendMessage('Agente', _out.output);
+      await saveMessageToDB('Agente', _out.output);
+    }
+    if (_out.respuesta) {
+      appendMessage('Agente', _out.respuesta);
+      await saveMessageToDB('Agente', _out.respuesta);
+    }
+    if (!_out.respuesta && !_out.config_final && !_out.output) {
+      appendMessage('Agente', 'No se recibió respuesta del agente.');
+    }
     
   } catch (error) {
-    console.error('Error al acceder al micrófono:', error);
-    appendMessage('Sistema', '❌ No se pudo acceder al micrófono. Verifica los permisos.');
-  }
-}
-
-function stopNativeRecording() {
-  if (mediaRecorder && mediaRecorder.state === 'recording') {
-    mediaRecorder.stop();
-    isRecording = false;
-    updateMicButton();
+    hideLoadingSpinner();
+    appendMessage('Agente', `Error de conexión: ${error.message}`);
   }
 }
 
@@ -334,25 +315,23 @@ function updateMicButton() {
 
 // Función para el botón del micrófono
 function toggleRecording() {
-  if (vapi) {
-    // Usar VAPI si está disponible
-    if (!isRecording) {
-      console.log('🎤 Iniciando conversación VAPI...');
-      vapi.start("ed7107e6-3fa0-43c7-8440-5bf0d6765a10");
-    } else {
-      console.log('⏹️ Deteniendo conversación VAPI...');
-      vapi.stop();
-    }
-  } else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    // Usar grabación nativa como fallback
-    if (!isRecording) {
-      startNativeRecording();
-    } else {
-      stopNativeRecording();
+  if (!recognition) {
+    console.log('❌ Reconocimiento de voz no disponible');
+    appendMessage('Sistema', '❌ Función de voz no disponible en este navegador');
+    return;
+  }
+
+  if (!isRecording) {
+    console.log('🎤 Iniciando reconocimiento de voz...');
+    try {
+      recognition.start();
+    } catch (error) {
+      console.error('Error al iniciar reconocimiento:', error);
+      appendMessage('Sistema', '❌ No se pudo iniciar el reconocimiento de voz');
     }
   } else {
-    console.log('❌ No hay función de grabación disponible');
-    appendMessage('Sistema', '❌ Función de voz no disponible en este entorno');
+    console.log('⏹️ Deteniendo reconocimiento de voz...');
+    recognition.stop();
   }
 }
 
@@ -371,11 +350,11 @@ document.addEventListener('DOMContentLoaded', () => {
     updateMicButton(); // Inicial styling
   }
   
-  // Inicializar VAPI cuando se carga la página
+  // Inicializar reconocimiento de voz cuando se carga la página
   setTimeout(() => {
-    console.log('🚀 Iniciando carga de VAPI...');
-    initializeVAPI();
-  }, 2000);
+    console.log('🚀 Iniciando reconocimiento de voz...');
+    initializeVoiceRecognition();
+  }, 1000);
 });
 
 // --- Chat envío de mensajes ---
