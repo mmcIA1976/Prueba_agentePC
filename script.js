@@ -149,19 +149,21 @@ let vapi = null;
 let isRecording = false;
 
 let vapiRetryCount = 0;
-const maxVapiRetries = 3;
+const maxVapiRetries = 5;
 
 function initializeVAPI() {
   vapiRetryCount++;
   
   console.log(`🔄 Intento ${vapiRetryCount} de inicializar VAPI...`);
-  console.log('🔍 Verificando VAPI en window:', typeof window.Vapi, !!window.Vapi);
   
-  // Verificar si VAPI está disponible en el objeto window
-  if (typeof window.Vapi !== 'undefined' && window.Vapi && typeof window.Vapi === 'function') {
+  // Verificar diferentes formas en que VAPI puede estar disponible
+  const vapiConstructor = window.Vapi || window.VapiSDK || (window.VapiWeb && window.VapiWeb.Vapi);
+  console.log('🔍 Verificando VAPI disponible:', !!vapiConstructor, typeof vapiConstructor);
+  
+  if (vapiConstructor && typeof vapiConstructor === 'function') {
     try {
       console.log('📡 VAPI SDK detectado, inicializando...');
-      vapi = new window.Vapi("b7395881-a803-4c64-97c2-2e167ad1633c");
+      vapi = new vapiConstructor("b7395881-a803-4c64-97c2-2e167ad1633c");
       
       console.log('✅ VAPI inicializado correctamente');
       vapiRetryCount = 0; // Reset counter
@@ -286,22 +288,23 @@ function toggleRecording() {
 document.addEventListener('DOMContentLoaded', () => {
   showLoginScreen();
   
-  // Verificar si estamos en el entorno de preview de Replit
-  const isRepl = window.location.hostname.includes('repl.co') || window.location.hostname.includes('replit.dev');
-  console.log('🌐 Entorno detectado:', isRepl ? 'Replit Preview' : 'Otro entorno');
+  // Verificar si estamos en el entorno desplegado
+  const isDeploy = window.location.hostname.includes('.replit.app') || window.location.hostname.includes('.replit.dev');
+  console.log('🌐 Entorno detectado:', isDeploy ? 'Replit Deploy' : 'Replit Preview');
   
-  // Inicializar VAPI cuando se carga la página
+  // Event listener para el botón del micrófono
+  const micButton = document.getElementById('mic-button');
+  if (micButton) {
+    micButton.addEventListener('click', toggleRecording);
+    updateMicButton(); // Inicial styling
+  }
+  
+  // Inicializar VAPI cuando se carga la página (más tiempo en deploy)
+  const delay = isDeploy ? 3000 : 1500;
   setTimeout(() => {
     console.log('🚀 Iniciando carga de VAPI...');
     initializeVAPI();
-    
-    // Event listener para el botón del micrófono
-    const micButton = document.getElementById('mic-button');
-    if (micButton) {
-      micButton.addEventListener('click', toggleRecording);
-      updateMicButton(); // Inicial styling
-    }
-  }, 1500);
+  }, delay);
 });
 
 // --- Chat envío de mensajes ---
