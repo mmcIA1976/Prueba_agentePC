@@ -267,7 +267,7 @@ async function sendTranscribedMessage(message) {
     hideLoadingSpinner();
 
     // Procesar respuesta igual que en el chat normal
-    const _out = Array.isArray(data) && data.length && data[0].output ? data[0].output : data;
+    const _out = Array.isArray(data) && data.length && data[0] ? data[0] : data;
 
     // ---- Reproducir audio si viene en la respuesta ----
     if (_out && _out.data && _out.data.startsWith && (_out.data.startsWith('data:audio/mpeg') || _out.data.startsWith('data:audio/mpga'))) {
@@ -392,7 +392,7 @@ if (chatForm) {
       hideLoadingSpinner();
 
       // --- Compatibilidad con respuesta anidada tipo [{output: { ... }}] ---
-      const _out = Array.isArray(data) && data.length && data[0].output ? data[0].output : data;
+      const _out = Array.isArray(data) && data.length && data[0] ? data[0] : data;
 
       // ---- Reproducir audio si viene en la respuesta ----
       if (_out && _out.data && _out.data.startsWith && (_out.data.startsWith('data:audio/mpeg') || _out.data.startsWith('data:audio/mpga'))) {
