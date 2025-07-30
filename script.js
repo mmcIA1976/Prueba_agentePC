@@ -319,13 +319,17 @@ async function sendTranscribedMessage(message) {
     // ---- SIEMPRE mostrar texto del agente cuando esté disponible ----
     let textoMostrado = false;
 
-    if (_out.output && typeof _out.output === "string" && _out.output.trim()) {
+    // Verificar campo "output" primero
+    if (_out && _out.output && typeof _out.output === "string" && _out.output.trim()) {
+      console.log('📝 [Transcripción] Mostrando texto del campo "output":', _out.output.substring(0, 100) + '...');
       appendMessage('Agente', _out.output);
       await saveMessageToDB('Agente', _out.output);
       textoMostrado = true;
     }
 
-    if (_out.respuesta && typeof _out.respuesta === "string" && _out.respuesta.trim()) {
+    // Verificar campo "respuesta" como alternativa
+    if (!textoMostrado && _out && _out.respuesta && typeof _out.respuesta === "string" && _out.respuesta.trim()) {
+      console.log('📝 [Transcripción] Mostrando texto del campo "respuesta":', _out.respuesta.substring(0, 100) + '...');
       appendMessage('Agente', _out.respuesta);
       await saveMessageToDB('Agente', _out.respuesta);
       textoMostrado = true;
@@ -333,6 +337,7 @@ async function sendTranscribedMessage(message) {
 
     // Solo mostrar error si NO hay texto Y NO hay configuración
     if (!textoMostrado && !_out.config_final) {
+      console.log('❌ [Transcripción] No se encontró texto válido en respuesta');
       appendMessage('Agente', 'No se recibió respuesta del agente. (Revisa el flujo de n8n)');
     }
 
@@ -994,13 +999,17 @@ if (chatForm) {
       // ---- SIEMPRE mostrar texto del agente cuando esté disponible ----
       let textoMostrado = false;
 
-      if (_out.output && typeof _out.output === "string" && _out.output.trim()) {
+      // Verificar campo "output" primero
+      if (_out && _out.output && typeof _out.output === "string" && _out.output.trim()) {
+        console.log('📝 Mostrando texto del campo "output":', _out.output.substring(0, 100) + '...');
         appendMessage('Agente', _out.output);
         await saveMessageToDB('Agente', _out.output);
         textoMostrado = true;
       }
 
-      if (_out.respuesta && typeof _out.respuesta === "string" && _out.respuesta.trim()) {
+      // Verificar campo "respuesta" como alternativa
+      if (!textoMostrado && _out && _out.respuesta && typeof _out.respuesta === "string" && _out.respuesta.trim()) {
+        console.log('📝 Mostrando texto del campo "respuesta":', _out.respuesta.substring(0, 100) + '...');
         appendMessage('Agente', _out.respuesta);
         await saveMessageToDB('Agente', _out.respuesta);
         textoMostrado = true;
@@ -1008,6 +1017,7 @@ if (chatForm) {
 
       // Solo mostrar error si NO hay texto Y NO hay configuración
       if (!textoMostrado && !_out.config_final) {
+        console.log('❌ No se encontró texto válido en respuesta');
         appendMessage('Agente', 'No se recibió respuesta del agente. (Revisa el flujo de n8n)');
       }
     } catch (error) {
