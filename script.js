@@ -321,13 +321,20 @@ async function sendTranscribedMessage(message) {
 
     // Verificar campo "output" primero
     if (_out && _out.output && typeof _out.output === "string" && _out.output.trim()) {
-      console.log('📝 [Transcripción] Mostrando texto del campo "output":', _out.output.substring(0, 100) + '...');
+      console.log('📝 [Transcripción] ✅ MOSTRANDO texto del campo "output":', _out.output.substring(0, 100) + '...');
+      console.log('📝 [Transcripción] 🔍 Longitud del texto:', _out.output.length);
       appendMessage('Agente', _out.output);
       await saveMessageToDB('Agente', _out.output);
       textoMostrado = true;
+    } else {
+      console.log('📝 [Transcripción] ❌ No se encontró campo "output" válido');
+      console.log('📝 [Transcripción] 🔍 _out existe:', !!_out);
+      console.log('📝 [Transcripción] 🔍 _out.output existe:', !!(_out && _out.output));
+      console.log('📝 [Transcripción] 🔍 _out.output es string:', typeof _out?.output);
+      console.log('📝 [Transcripción] 🔍 _out.output contenido:', _out?.output);
     }
 
-    // Verificar campo "respuesta" como alternativa
+    // Verificar campo "respuesta" como alternativa SOLO si no hay output
     if (!textoMostrado && _out && _out.respuesta && typeof _out.respuesta === "string" && _out.respuesta.trim()) {
       console.log('📝 [Transcripción] Mostrando texto del campo "respuesta":', _out.respuesta.substring(0, 100) + '...');
       appendMessage('Agente', _out.respuesta);
@@ -1001,13 +1008,20 @@ if (chatForm) {
 
       // Verificar campo "output" primero
       if (_out && _out.output && typeof _out.output === "string" && _out.output.trim()) {
-        console.log('📝 Mostrando texto del campo "output":', _out.output.substring(0, 100) + '...');
+        console.log('📝 ✅ MOSTRANDO texto del campo "output":', _out.output.substring(0, 100) + '...');
+        console.log('📝 🔍 Longitud del texto:', _out.output.length);
         appendMessage('Agente', _out.output);
         await saveMessageToDB('Agente', _out.output);
         textoMostrado = true;
+      } else {
+        console.log('📝 ❌ No se encontró campo "output" válido');
+        console.log('📝 🔍 _out existe:', !!_out);
+        console.log('📝 🔍 _out.output existe:', !!(_out && _out.output));
+        console.log('📝 🔍 _out.output es string:', typeof _out?.output);
+        console.log('📝 🔍 _out.output contenido:', _out?.output);
       }
 
-      // Verificar campo "respuesta" como alternativa
+      // Verificar campo "respuesta" como alternativa SOLO si no hay output
       if (!textoMostrado && _out && _out.respuesta && typeof _out.respuesta === "string" && _out.respuesta.trim()) {
         console.log('📝 Mostrando texto del campo "respuesta":', _out.respuesta.substring(0, 100) + '...');
         appendMessage('Agente', _out.respuesta);
