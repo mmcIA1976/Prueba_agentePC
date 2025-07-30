@@ -317,17 +317,13 @@ async function sendMessage(message) {
       appendMessage('Agente', _out.output);
       await saveMessageToDB('Agente', _out.output);
       textoMostrado = true;
-    } else if (_out && _out.respuesta && typeof _out.respuesta === "string" && _out.respuesta.trim()) {
-      console.log('📝 Mostrando texto del campo "respuesta"');
-      appendMessage('Agente', _out.respuesta);
-      await saveMessageToDB('Agente', _out.respuesta);
-      textoMostrado = true;
     }
 
     if (!textoMostrado && !_out.config_final) {
       console.log('❌ No se encontró texto válido en respuesta');
+      console.log('🔍 Campos disponibles en _out:', Object.keys(_out || {}));
       appendMessage('Agente', 'No se recibió respuesta del agente.');
-    }
+    }</textoMostrado>
 
   } catch (error) {
     hideLoadingSpinner();
