@@ -330,6 +330,8 @@ async function sendMessage(message) {
     // Procesar respuesta JSON
     const _out = Array.isArray(data) && data.length && data[0] ? data[0] : data;
 
+    console.log('🔍 Datos recibidos de N8N:', _out);
+
     // Mostrar configuración si existe
     if (_out && _out.isConfigFinal === true && _out.config_final) {
       renderConfiguracion(_out.config_final);
@@ -347,11 +349,17 @@ async function sendMessage(message) {
       textoMostrado = true;
     }
 
-    if (!textoMostrado && !_out.config_final) {
-      console.log('❌ No se encontró texto válido en respuesta');
-      console.log('🔍 Campos disponibles en _out:', Object.keys(_out || {}));
+    // Manejar audio desde Supabase
+    if (_out && _out.audio_url && typeof _out.audio_url === "string" && _out.audio_url.trim()) {
+      console.log('🎵 ✅ Audio URL encontrada:', _out.audio_url);
+      playSupabaseAudio(_out.audio_url);
+    }
+
+    if (!textoMostrado && !_out.config_final && !_out.audio_url) {
+      console.log('❌ No se encontró contenido válido en respuesta');
+      console.log('🔍 Campos disponibles:', Object.keys(_out || {}));
       appendMessage('Agente', 'No se recibió respuesta del agente.');
-    }</textoMostrado>
+    }
 
   } catch (error) {
     hideLoadingSpinner();
@@ -503,7 +511,93 @@ function renderConfiguracion(config_final) {
   });
 }
 
+// --- AUDIO DESDE SUPABASE ---
+function playSupabaseAudio(audioUrl) {
+  try {
+    console.log('🎵 Reproduciendo audio desde Supabase:', audioUrl);
+
+    const audioContainer = document.getElementById('audio-container');
+
+    if (audioContainer) {
+      const audioId = 'supabase_audio_' + Date.now();
+
+      audioContainer.innerHTML = `
+        <div class="external-audio-player supabase-audio">
+          <div class="audio-header">
+            <div class="audio-title">
+              <span style="font-size: 1.5em;">🎵</span>
+              <strong>Audio del Agente</strong>
+            </div>
+            <button onclick="toggleAudioPlayer()" class="audio-toggle-btn">➖ Minimizar</button>
+          </div>
+          <div class="audio-content" id="audio-content">
+            <div class="audio-player-wrapper">
+              <audio id="audio-${audioId}" controls preload="auto">
+                <source src="${audioUrl}" type="audio/mpeg">
+              </audio>
+            </div>
+            <div class="audio-controls">
+              <button onclick="document.getElementById('audio-${audioId}').play()" class="audio-btn play-btn">▶️ Reproducir</button>
+              <button onclick="downloadSupabaseAudio('${audioUrl}')" class="audio-btn download-btn">📥 Descargar</button>
+            </div>
+            <div id="status-${audioId}" class="audio-status">✅ Audio cargado desde Supabase</div>
+          </div>
+        </div>
+      `;
+
+      audioContainer.style.display = 'block';
+
+      const audioElement = document.getElementById(`audio-${audioId}`);
+      const statusElement = document.getElementById(`status-${audioId}`);
+
+      if (audioElement && statusElement) {
+        audioElement.addEventListener('loadeddata', () => {
+          console.log('✅ Audio de Supabase cargado y listo');
+          statusElement.textContent = '✅ Audio listo';
+
+          setTimeout(() => {
+            const playPromise = audioElement.play();
+            if (playPromise !== undefined) {
+              playPromise
+                .then(() => {
+                  console.log('🎵 Audio de Supabase reproduciéndose automáticamente');
+                  statusElement.textContent = '🎵 Reproduciendo...';
+                })
+                .catch(() => {
+                  statusElement.textContent = '⚠️ Haz clic en ▶️ para reproducir';
+                });
+            }
+          }, 500);
+        });
+
+        audioElement.addEventListener('ended', () => {
+          statusElement.textContent = '🏁 Reproducción completada';
+        });
+
+        audioElement.addEventListener('error', (e) => {
+          console.error('❌ Error cargando audio de Supabase:', e);
+          statusElement.textContent = '❌ Error al cargar audio';
+        });
+      }
+    }
+
+  } catch (error) {
+    console.error('❌ Error procesando audio de Supabase:', error);
+    appendMessage('Sistema', `❌ Error al procesar audio: ${error.message}`);
+  }
+}
+
 // --- FUNCIONES GLOBALES ---
+window.downloadSupabaseAudio = function(audioUrl) {
+  const a = document.createElement('a');
+  a.href = audioUrl;
+  a.download = `audio_agente_${Date.now()}.mp3`;
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
+
 window.downloadBinaryAudio = function(blobUrl) {
   const a = document.createElement('a');
   a.href = blobUrl;
