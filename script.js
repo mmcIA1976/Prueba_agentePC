@@ -179,7 +179,7 @@ function initializeVoiceRecognition() {
       currentTranscript = '';
       hasSpokenRecently = false;
       updateMicButton();
-      appendMessage('Sistema', '🎤 Escuchando... Habla tranquilo, tienes tiempo para pensar');
+      // NO mostrar mensaje en el chat para evitar spam
     };
 
     recognition.onresult = (event) => {
@@ -272,7 +272,7 @@ function initializeVoiceRecognition() {
       currentTranscript = '';
       hasSpokenRecently = false;
       updateMicButton();
-      appendMessage('Sistema', '⏹️ Reconocimiento de voz detenido');
+      // NO mostrar mensaje en el chat
     };
 
     console.log('✅ Reconocimiento de voz configurado correctamente');
@@ -750,7 +750,18 @@ window.toggleAudioPlayer = function() {
 };
 
 // --- INICIALIZACIÓN ---
+let appInitialized = false; // Prevenir inicialización múltiple
+
 document.addEventListener('DOMContentLoaded', () => {
+  // Prevenir múltiples inicializaciones
+  if (appInitialized) {
+    console.log('⚠️ App ya inicializada, saltando...');
+    return;
+  }
+  appInitialized = true;
+
+  console.log('🚀 Inicializando aplicación...');
+
   // Verificar si hay sesión activa primero
   const hasSession = checkExistingSession();
 
@@ -781,6 +792,5 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Inicializar reconocimiento de voz una sola vez
-  console.log('🚀 Iniciando reconocimiento de voz...');
   initializeVoiceRecognition();
 });
