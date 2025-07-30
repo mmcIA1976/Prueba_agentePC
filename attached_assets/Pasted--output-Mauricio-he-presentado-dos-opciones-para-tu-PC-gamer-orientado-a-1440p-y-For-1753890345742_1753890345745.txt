@@ -1,0 +1,68 @@
+[
+  {
+    "output": "Mauricio, he presentado dos opciones para tu PC gamer orientado a 1440p y Fortnite, ambas dentro del presupuesto de 1500 euros, con RAM DDR5, Wi-Fi integrado, buena refrigeración y estética RGB. Las configuraciones son para AMD y para Intel, con componentes detallados y rangos aproximados de precio. Ahora puedo continuar con la búsqueda de precios exactos y enlaces para CPU, GPU, RAM y placa base para ambas configuraciones si quieres.",
+    "config_final": [
+      {
+        "nombre": "Configuración Final Intel",
+        "total": "1000 €",
+        "componentes": [
+          {
+            "tipo": "CPU",
+            "modelo": "Intel Core i5-14600KF",
+            "precio": "220 €",
+            "url": "https://www.pccomponentes.com/intel-core-i5-14600kf"
+          },
+          {
+            "tipo": "Placa Base",
+            "modelo": "Gigabyte B760M AORUS AX WiFi",
+            "precio": "165 €",
+            "url": "https://www.pccomponentes.com/gigabyte-b760m-aorus-ax-wifi"
+          },
+          {
+            "tipo": "RAM",
+            "modelo": "2x16 GB DDR5 6000 MHz CL30 (G.Skill o Corsair)",
+            "precio": "115 €",
+            "url": "https://www.pccomponentes.com/gskill-trident-z5-rgb-2x16gb-6000mhz"
+          },
+          {
+            "tipo": "GPU",
+            "modelo": "NVIDIA RTX 5070 (12 GB GDDR6X)",
+            "precio": "500 €",
+            "url": "https://www.pccomponentes.com/gigabyte-geforce-rtx-4070-eagle-12gb"
+          }
+        ]
+      },
+      {
+        "nombre": "Configuración Final AMD",
+        "total": "1015 €",
+        "componentes": [
+          {
+            "tipo": "CPU",
+            "modelo": "AMD Ryzen 5 7600",
+            "precio": "215 €",
+            "url": "https://www.pccomponentes.com/amd-ryzen-5-7600"
+          },
+          {
+            "tipo": "Placa Base",
+            "modelo": "MSI B650 Tomahawk WiFi",
+            "precio": "165 €",
+            "url": "https://www.pccomponentes.com/msi-b650-tomahawk-wifi"
+          },
+          {
+            "tipo": "RAM",
+            "modelo": "2x16 GB DDR5 6000 MHz CL30 (G.Skill o Corsair)",
+            "precio": "115 €",
+            "url": "https://www.pccomponentes.com/corsair-vengeance-ddr5-2x16gb-6000mhz"
+          },
+          {
+            "tipo": "GPU",
+            "modelo": "AMD RX 9070 (12 GB)",
+            "precio": "520 €",
+            "url": "https://www.pccomponentes.com/asus-radeon-rx-7900-xt-rog-strix-16gb"
+          }
+        ]
+      }
+    ],
+    "isConfigFinal": true
+  }
+]
