@@ -215,12 +215,12 @@ function initializeVoiceRecognition() {
         voiceTimeout = setTimeout(() => {
           if (currentTranscript.trim() && !isProcessingMessage) {
             console.log('⏰ 3 segundos de silencio - enviando mensaje:', currentTranscript);
-            
+
             // Transcribir al chatbox
             chatInput.value = currentTranscript.trim();
             appendMessage('Tú', currentTranscript.trim());
             saveMessageToDB('Tú', currentTranscript.trim());
-            
+
             // Enviar al agente automáticamente
             sendMessage(currentTranscript.trim());
 
@@ -742,7 +742,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return;
   }
   document.body.setAttribute('data-app-ready', 'true');
-  
+
   console.log('🚀 Inicializando aplicación UNA SOLA VEZ...');
 
   // Verificar sesión
