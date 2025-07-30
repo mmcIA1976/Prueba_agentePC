@@ -156,13 +156,20 @@ let currentTranscript = '';
 let hasSpokenRecently = false;
 
 function initializeVoiceRecognition() {
+  // PROTECCIÓN TRIPLE
+  if (window.recognitionInitialized) {
+    console.log('⚠️ Reconocimiento ya inicializado globalmente, saliendo...');
+    return;
+  }
+  
   // Si ya existe, salir inmediatamente
   if (recognition) {
     console.log('⚠️ Reconocimiento ya existe, saliendo...');
     return;
   }
 
-  console.log('🎤 Inicializando reconocimiento de voz...');
+  window.recognitionInitialized = true;
+  console.log('🎤 Inicializando reconocimiento de voz una sola vez...');
 
   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -747,42 +754,55 @@ window.toggleAudioPlayer = function() {
 };
 
 // --- INICIALIZACIÓN ---
-// SOLUCIÓN DEFINITIVA: Ejecutar solo al final del archivo
-document.addEventListener('DOMContentLoaded', function() {
-  // PROTECCIÓN ABSOLUTA
-  if (document.body.hasAttribute('data-app-ready')) {
-    return;
-  }
-  document.body.setAttribute('data-app-ready', 'true');
+// PROTECCIÓN GLOBAL CONTRA MÚLTIPLE INICIALIZACIÓN
+if (window.appInitialized) {
+  console.log('⚠️ App ya inicializada, saliendo...');
+} else {
+  window.appInitialized = true;
+  
+  // SOLUCIÓN DEFINITIVA: Ejecutar solo al final del archivo
+  document.addEventListener('DOMContentLoaded', function() {
+    // PROTECCIÓN DOBLE
+    if (document.body.hasAttribute('data-app-ready')) {
+      console.log('⚠️ DOM ya configurado, saliendo...');
+      return;
+    }
+    document.body.setAttribute('data-app-ready', 'true');
 
-  console.log('🚀 Inicializando aplicación UNA SOLA VEZ...');
+    console.log('🚀 Inicializando aplicación UNA SOLA VEZ...');
 
-  // Verificar sesión
-  const hasSession = checkExistingSession();
-  if (!hasSession) {
-    showLoginScreen();
-  }
+    // Verificar sesión
+    const hasSession = checkExistingSession();
+    if (!hasSession) {
+      showLoginScreen();
+    }
 
-  // Event listeners con protección
-  const micButton = document.getElementById('mic-button');
-  if (micButton) {
-    micButton.addEventListener('click', toggleRecording);
-    updateMicButton();
-  }
+    // Event listeners con protección
+    const micButton = document.getElementById('mic-button');
+    if (micButton && !micButton.hasAttribute('data-listener-added')) {
+      micButton.setAttribute('data-listener-added', 'true');
+      micButton.addEventListener('click', toggleRecording);
+      updateMicButton();
+    }
 
-  if (chatForm) {
-    chatForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const message = chatInput.value.trim();
-      if (!message || isProcessingMessage) return;
+    if (chatForm && !chatForm.hasAttribute('data-listener-added')) {
+      chatForm.setAttribute('data-listener-added', 'true');
+      chatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const message = chatInput.value.trim();
+        if (!message || isProcessingMessage) return;
 
-      appendMessage('Tú', message);
-      await saveMessageToDB('Tú', message);
-      chatInput.value = '';
-      await sendMessage(message);
-    });
-  }
+        appendMessage('Tú', message);
+        await saveMessageToDB('Tú', message);
+        chatInput.value = '';
+        await sendMessage(message);
+      });
+    }
 
-  // Inicializar voz UNA SOLA VEZ
-  initializeVoiceRecognition();
-}, { once: true });
+    // Inicializar voz UNA SOLA VEZ con protección extra
+    if (!window.voiceInitialized) {
+      window.voiceInitialized = true;
+      initializeVoiceRecognition();
+    }
+  }, { once: true });
+}
