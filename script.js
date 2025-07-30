@@ -220,24 +220,30 @@ function initializeVoiceRecognition() {
 
         console.log('🎤 Detectando voz...', interimTranscript || finalTranscript);
 
-        // Establecer nuevo timeout de 4 segundos de silencio
+        // Establecer nuevo timeout de 3 segundos de silencio
         voiceTimeout = setTimeout(() => {
-          if (currentTranscript.trim() && !isProcessingMessage && hasSpokenRecently) {
-            console.log('⏰ Timeout de silencio alcanzado, procesando mensaje:', currentTranscript);
+          if (currentTranscript.trim() && !isProcessingMessage) {
+            console.log('⏰ 3 segundos de silencio - enviando mensaje:', currentTranscript);
+            
+            // Transcribir al chatbox
+            chatInput.value = currentTranscript.trim();
             appendMessage('Tú', currentTranscript.trim());
             saveMessageToDB('Tú', currentTranscript.trim());
+            
+            // Enviar al agente automáticamente
             sendMessage(currentTranscript.trim());
 
-            // Resetear
+            // Resetear todo
             currentTranscript = '';
             hasSpokenRecently = false;
+            chatInput.value = '';
 
-            // Detener reconocimiento automáticamente
+            // Detener reconocimiento
             if (recognition && isRecording) {
               recognition.stop();
             }
           }
-        }, 4000); // 4 segundos de pausa
+        }, 3000); // 3 segundos de silencio
       }
     };
 
@@ -314,14 +320,14 @@ function updateMicButton() {
   if (!micButton) return;
 
   if (isRecording) {
-    micButton.textContent = '⏹️';
+    micButton.textContent = '🎤';
     micButton.classList.add('recording');
-    micButton.title = 'Detener conversación';
+    micButton.title = 'Escuchando... (3 seg de silencio para enviar)';
     micButton.style.backgroundColor = '#ff4757';
   } else {
     micButton.textContent = '🎤';
     micButton.classList.remove('recording');
-    micButton.title = 'Iniciar conversación';
+    micButton.title = 'Hablar';
     micButton.style.backgroundColor = '#2ed573';
   }
 }
@@ -333,36 +339,18 @@ function toggleRecording() {
     return;
   }
 
-  if (!isRecording) {
-    console.log('🎤 Iniciando reconocimiento de voz...');
-    try {
-      recognition.start();
-    } catch (error) {
-      console.error('Error al iniciar reconocimiento:', error);
-      appendMessage('Sistema', '❌ No se pudo iniciar el reconocimiento de voz');
-    }
-  } else {
-    console.log('⏹️ Deteniendo reconocimiento de voz...');
+  // SOLO INICIAR - ignorar si ya está grabando
+  if (isRecording) {
+    console.log('🎤 Ya está escuchando...');
+    return;
+  }
 
-    // Limpiar timeout al detener manualmente
-    if (voiceTimeout) {
-      clearTimeout(voiceTimeout);
-      voiceTimeout = null;
-    }
-
-    // Procesar mensaje si hay contenido antes de detener
-    if (currentTranscript.trim() && !isProcessingMessage) {
-      console.log('📝 Procesando mensaje antes de detener:', currentTranscript);
-      appendMessage('Tú', currentTranscript.trim());
-      saveMessageToDB('Tú', currentTranscript.trim());
-      sendMessage(currentTranscript.trim());
-    }
-
-    // Resetear variables
-    currentTranscript = '';
-    hasSpokenRecently = false;
-
-    recognition.stop();
+  console.log('🎤 Iniciando reconocimiento de voz...');
+  try {
+    recognition.start();
+  } catch (error) {
+    console.error('Error al iniciar reconocimiento:', error);
+    appendMessage('Sistema', '❌ No se pudo iniciar el reconocimiento de voz');
   }
 }
 
