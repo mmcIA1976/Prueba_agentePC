@@ -6,6 +6,7 @@ let isRecording = false;
 let loadingSpinnerElement = null;
 let isProcessingMessage = false; // Prevenir múltiples envíos
 let lastMessageTimestamp = 0; // Prevenir mensajes duplicados rápidos
+let voiceInitialized = false; // Prevenir múltiples inicializaciones
 
 const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
@@ -156,6 +157,12 @@ let currentTranscript = '';
 let hasSpokenRecently = false;
 
 function initializeVoiceRecognition() {
+  // Prevenir múltiples inicializaciones
+  if (voiceInitialized) {
+    console.log('⚠️ Reconocimiento de voz ya inicializado, saltando...');
+    return;
+  }
+
   console.log('🎤 Inicializando reconocimiento de voz...');
 
   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -269,9 +276,11 @@ function initializeVoiceRecognition() {
     };
 
     console.log('✅ Reconocimiento de voz configurado correctamente');
+    voiceInitialized = true; // Marcar como inicializado
     setupVoiceButton();
   } else {
     console.log('❌ Web Speech API no disponible en este navegador');
+    voiceInitialized = true; // Marcar como inicializado aunque no funcione
     showVoiceUnavailable();
   }
 }
@@ -468,19 +477,7 @@ async function sendMessage(message) {
   } finally {
     isProcessingMessage = false; // Liberar bloqueo SIEMPRE
     console.log('✅ Bloqueo de mensaje liberado');
-
-      // Si estaba grabando y se detuvo por el envío, reiniciar automáticamente después de un breve delay
-      setTimeout(() => {
-        if (!isRecording && recognition && currentUser) {
-          console.log('🔄 Reiniciando reconocimiento automáticamente...');
-          try {
-            recognition.start();
-          } catch (error) {
-            console.log('ℹ️ No se pudo reiniciar automáticamente (normal si ya está activo)');
-          }
-        }
-      }, 1500); // Esperar 1.5 segundos antes de reiniciar
-    }
+  }
 }
 
 // --- AUDIO ---
@@ -783,9 +780,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Inicializar reconocimiento de voz
-  setTimeout(() => {
-    console.log('🚀 Iniciando reconocimiento de voz...');
-    initializeVoiceRecognition();
-  }, 1000);
+  // Inicializar reconocimiento de voz una sola vez
+  console.log('🚀 Iniciando reconocimiento de voz...');
+  initializeVoiceRecognition();
 });
