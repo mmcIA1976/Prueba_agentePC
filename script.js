@@ -273,8 +273,6 @@ async function sendTranscribedMessage(message) {
     if (audioBinaryData) {
       console.log('🎤 Procesando audio binario de transcripción:', audioBinaryData.byteLength, 'bytes');
       playBinaryAudio(audioBinaryData);
-      appendMessage('Agente', '🎵 Respuesta de voz enviada como audio directo');
-      await saveMessageToDB('Agente', '🎵 Respuesta de voz enviada como audio directo');
       return; // No procesar más, solo audio
     }
 
@@ -328,14 +326,8 @@ async function sendTranscribedMessage(message) {
       await saveMessageToDB('Agente', _out.respuesta);
     }
     
-    // ---- Solo mostrar mensaje de "solo audio" si NO hay texto ----
-    if (!_out.respuesta && !_out.config_final && !_out.output && audioUrl) {
-      appendMessage('Agente', '🎵 Respuesta enviada como audio (sin texto)');
-      await saveMessageToDB('Agente', '🎵 Respuesta enviada como audio');
-    }
-    
-    // ---- Solo mostrar error si NO hay audio NI texto ----
-    if (!_out.respuesta && !_out.config_final && !_out.output && !audioUrl) {
+    // ---- Solo mostrar error si NO hay texto de ningún tipo ----
+    if (!_out.respuesta && !_out.config_final && !_out.output) {
       appendMessage('Agente', 'No se recibió respuesta del agente.');
     }
 
@@ -948,8 +940,6 @@ if (chatForm) {
       if (audioBinaryData) {
         console.log('🎵 Procesando archivo de audio binario:', audioBinaryData.byteLength, 'bytes');
         playBinaryAudio(audioBinaryData);
-        appendMessage('Agente', '🎵 Respuesta enviada como audio directo');
-        await saveMessageToDB('Agente', '🎵 Respuesta enviada como audio directo');
         return; // No procesar más, solo audio
       }
 
@@ -1006,14 +996,8 @@ if (chatForm) {
         await saveMessageToDB('Agente', _out.respuesta);
       }
       
-      // ---- Solo mostrar mensaje de "solo audio" si NO hay texto ----
-      if (!_out.respuesta && !_out.config_final && !_out.output && audioUrl) {
-        appendMessage('Agente', '🎵 Respuesta enviada como audio (sin texto)');
-        await saveMessageToDB('Agente', '🎵 Respuesta enviada como audio');
-      }
-      
-      // ---- Solo mostrar error si NO hay audio NI texto ----
-      if (!_out.respuesta && !_out.config_final && !_out.output && !audioUrl) {
+      // ---- Solo mostrar error si NO hay texto de ningún tipo ----
+      if (!_out.respuesta && !_out.config_final && !_out.output) {
         appendMessage('Agente', 'No se recibió respuesta del agente. (Revisa el flujo de n8n)');
       }
     } catch (error) {
