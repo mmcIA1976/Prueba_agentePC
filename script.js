@@ -386,7 +386,7 @@ function toggleRecording() {
   }
 }
 
-// --- Función única y confiable para reproducir audio ---
+// --- Función única y confiable para reproducir audio FUERA del chatbox ---
 function playAudioReliable(audioData) {
   try {
     console.log('🎵 Reproduciendo audio desde N8N:', typeof audioData);
@@ -403,51 +403,64 @@ function playAudioReliable(audioData) {
       }
     }
     
-    // Crear elemento de audio dinámico
-    const audioId = 'response_audio_' + Date.now();
-    const audioContainer = document.createElement('div');
-    audioContainer.className = 'audio-response-container';
+    // Limpiar contenedor de audio previo
+    const audioContainer = document.getElementById('audio-container');
+    if (audioContainer) {
+      audioContainer.innerHTML = '';
+    }
     
-    audioContainer.innerHTML = `
-      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 15px; margin: 15px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-          <span style="font-size: 1.5em;">🎵</span>
-          <strong style="font-size: 1.1em;">Respuesta de Audio</strong>
-        </div>
-        <div style="background: #ff6b35; color: white; padding: 12px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #ff4757;">
-          <div style="font-weight: bold; margin-bottom: 5px;">⚠️ Google Drive no permite reproducción directa</div>
-          <div style="font-size: 13px;">Los navegadores bloquean la reproducción automática desde Google Drive por seguridad. Usa los botones de abajo.</div>
-        </div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: 15px 0;">
-          <button onclick="window.open('${finalAudioUrl}', '_blank')" style="background: #28a745; color: white; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; flex: 1; min-width: 140px;">
-            🎧 Escuchar Audio
-          </button>
-          <button onclick="downloadAudio('${finalAudioUrl}')" style="background: #007bff; color: white; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; flex: 1; min-width: 140px;">
-            📥 Descargar MP3
+    // Crear elemento de audio dinámico FUERA del chatbox
+    const audioId = 'response_audio_' + Date.now();
+    
+    const audioContent = `
+      <div class="external-audio-player">
+        <div class="audio-header">
+          <div class="audio-title">
+            <span style="font-size: 1.5em;">🎵</span>
+            <strong>Respuesta de Audio</strong>
+          </div>
+          <button onclick="toggleAudioPlayer()" class="audio-toggle-btn">
+            ➖ Minimizar
           </button>
         </div>
-        <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; margin: 10px 0;">
-          <div style="font-size: 12px; color: #b8d4ff; margin-bottom: 8px;">💡 <strong>Cómo escuchar:</strong></div>
-          <div style="font-size: 13px; line-height: 1.4;">
-            1. Haz clic en <strong>"🎧 Escuchar Audio"</strong> - se abrirá Google Drive<br>
-            2. En la página de Google Drive, haz clic en el botón de reproducir<br>
-            3. O descarga el archivo con <strong>"📥 Descargar MP3"</strong>
+        <div class="audio-content" id="audio-content">
+          <div class="audio-warning">
+            <div class="warning-title">⚠️ Google Drive no permite reproducción directa</div>
+            <div class="warning-text">Los navegadores bloquean la reproducción automática desde Google Drive por seguridad. Usa los botones de abajo.</div>
           </div>
+          <div class="audio-controls">
+            <button onclick="window.open('${finalAudioUrl}', '_blank')" class="audio-btn listen-btn">
+              🎧 Escuchar Audio
+            </button>
+            <button onclick="downloadAudio('${finalAudioUrl}')" class="audio-btn download-btn">
+              📥 Descargar MP3
+            </button>
+          </div>
+          <div class="audio-instructions">
+            <div class="instructions-title">💡 <strong>Cómo escuchar:</strong></div>
+            <div class="instructions-text">
+              1. Haz clic en <strong>"🎧 Escuchar Audio"</strong> - se abrirá Google Drive<br>
+              2. En la página de Google Drive, haz clic en el botón de reproducir<br>
+              3. O descarga el archivo con <strong>"📥 Descargar MP3"</strong>
+            </div>
+          </div>
+          <details class="audio-details">
+            <summary>🔍 Información técnica</summary>
+            <div class="technical-info">
+              <strong>URL:</strong> ${finalAudioUrl}<br>
+              <strong>Problema:</strong> Google Drive bloquea reproducción directa en navegadores<br>
+              <strong>Solución:</strong> Usar el botón "Escuchar Audio" para abrir en Google Drive
+            </div>
+          </details>
         </div>
-        <details style="margin-top: 10px;">
-          <summary style="cursor: pointer; font-size: 12px; color: #b8d4ff;">🔍 Información técnica</summary>
-          <div style="font-size: 11px; color: #d0d0d0; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px;">
-            <strong>URL:</strong> ${finalAudioUrl}<br>
-            <strong>Problema:</strong> Google Drive bloquea reproducción directa en navegadores<br>
-            <strong>Solución:</strong> Usar el botón "Escuchar Audio" para abrir en Google Drive
-          </div>
-        </details>
       </div>
     `;
 
-    // Agregar al chat
-    chatLog.appendChild(audioContainer);
-    chatLog.scrollTop = chatLog.scrollHeight;
+    // Agregar al contenedor de audio externo
+    if (audioContainer) {
+      audioContainer.innerHTML = audioContent;
+      audioContainer.style.display = 'block';
+    }
 
     // Configurar elemento de audio
     const audioElement = document.getElementById(`audio-${audioId}`);
@@ -632,7 +645,7 @@ window.tryDirectPlay = function(audioId, url) {
 };
 
 // Función para probar la URL directamente
-// Función para reproducir audio binario directo
+// Función para reproducir audio binario directo FUERA del chatbox
 function playBinaryAudio(audioArrayBuffer) {
   try {
     console.log('🎵 Reproduciendo audio binario directo:', audioArrayBuffer.byteLength, 'bytes');
@@ -643,38 +656,51 @@ function playBinaryAudio(audioArrayBuffer) {
     
     console.log('✅ Blob de audio creado:', audioUrl);
     
-    // Crear elemento de audio dinámico
-    const audioId = 'binary_audio_' + Date.now();
-    const audioContainer = document.createElement('div');
-    audioContainer.className = 'audio-response-container';
+    // Limpiar contenedor de audio previo
+    const audioContainer = document.getElementById('audio-container');
+    if (audioContainer) {
+      audioContainer.innerHTML = '';
+    }
     
-    audioContainer.innerHTML = `
-      <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 20px; border-radius: 15px; margin: 15px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-          <span style="font-size: 1.5em;">🎵</span>
-          <strong style="font-size: 1.1em;">Audio Directo de N8N</strong>
-        </div>
-        <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; margin: 10px 0;">
-          <audio id="audio-${audioId}" controls style="width: 100%; margin: 10px 0;" preload="auto">
-            <source src="${audioUrl}" type="audio/mpeg">
-            Tu navegador no soporta este audio.
-          </audio>
-        </div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: 15px 0;">
-          <button onclick="document.getElementById('audio-${audioId}').play()" style="background: #28a745; color: white; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; flex: 1; min-width: 140px;">
-            ▶️ Reproducir
-          </button>
-          <button onclick="downloadBinaryAudio('${audioUrl}')" style="background: #007bff; color: white; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; flex: 1; min-width: 140px;">
-            📥 Descargar MP3
+    // Crear elemento de audio dinámico FUERA del chatbox
+    const audioId = 'binary_audio_' + Date.now();
+    
+    const audioContent = `
+      <div class="external-audio-player binary-audio">
+        <div class="audio-header">
+          <div class="audio-title">
+            <span style="font-size: 1.5em;">🎵</span>
+            <strong>Audio Directo de N8N</strong>
+          </div>
+          <button onclick="toggleAudioPlayer()" class="audio-toggle-btn">
+            ➖ Minimizar
           </button>
         </div>
-        <div id="status-${audioId}" style="font-size: 14px; color: #b8f5cd; margin: 10px 0;">✅ Audio cargado directamente</div>
+        <div class="audio-content" id="audio-content">
+          <div class="audio-player-wrapper">
+            <audio id="audio-${audioId}" controls preload="auto">
+              <source src="${audioUrl}" type="audio/mpeg">
+              Tu navegador no soporta este audio.
+            </audio>
+          </div>
+          <div class="audio-controls">
+            <button onclick="document.getElementById('audio-${audioId}').play()" class="audio-btn play-btn">
+              ▶️ Reproducir
+            </button>
+            <button onclick="downloadBinaryAudio('${audioUrl}')" class="audio-btn download-btn">
+              📥 Descargar MP3
+            </button>
+          </div>
+          <div id="status-${audioId}" class="audio-status">✅ Audio cargado directamente</div>
+        </div>
       </div>
     `;
 
-    // Agregar al chat
-    chatLog.appendChild(audioContainer);
-    chatLog.scrollTop = chatLog.scrollHeight;
+    // Agregar al contenedor de audio externo
+    if (audioContainer) {
+      audioContainer.innerHTML = audioContent;
+      audioContainer.style.display = 'block';
+    }
 
     // Configurar elemento de audio
     const audioElement = document.getElementById(`audio-${audioId}`);
@@ -760,6 +786,26 @@ window.downloadAudio = function(url) {
   document.body.removeChild(a);
   
   console.log('✅ Descarga iniciada');
+};
+
+// Función para minimizar/expandir el reproductor de audio
+window.toggleAudioPlayer = function() {
+  const audioContent = document.getElementById('audio-content');
+  const toggleBtn = document.querySelector('.audio-toggle-btn');
+  
+  if (audioContent && toggleBtn) {
+    if (audioContent.style.display === 'none') {
+      // Expandir
+      audioContent.style.display = 'block';
+      toggleBtn.textContent = '➖ Minimizar';
+      console.log('🔄 Reproductor de audio expandido');
+    } else {
+      // Minimizar
+      audioContent.style.display = 'none';
+      toggleBtn.textContent = '➕ Expandir';
+      console.log('🔄 Reproductor de audio minimizado');
+    }
+  }
 };
 
 window.testAudioUrl = function(url) {
