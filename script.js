@@ -318,6 +318,7 @@ async function sendTranscribedMessage(message) {
       configContainer.innerHTML = '';
     }
 
+    // ---- Mostrar texto del agente (output o respuesta) ----
     if (_out.output && typeof _out.output === "string") {
       appendMessage('Agente', _out.output);
       await saveMessageToDB('Agente', _out.output);
@@ -327,7 +328,7 @@ async function sendTranscribedMessage(message) {
       await saveMessageToDB('Agente', _out.respuesta);
     }
     
-    // ---- NUEVO: Si solo viene audio sin texto en transcripción ----
+    // ---- Solo mostrar mensaje de "solo audio" si NO hay texto ----
     if (!_out.respuesta && !_out.config_final && !_out.output && audioUrl) {
       appendMessage('Agente', '🎵 Respuesta enviada como audio (sin texto)');
       await saveMessageToDB('Agente', '🎵 Respuesta enviada como audio');
@@ -995,7 +996,7 @@ if (chatForm) {
         configContainer.innerHTML = '';
       }
 
-      // ---- Chat "normal" sigue igual (solo muestra si output es string) ----
+      // ---- Mostrar texto del agente (output o respuesta) ----
       if (_out.output && typeof _out.output === "string") {
         appendMessage('Agente', _out.output);
         await saveMessageToDB('Agente', _out.output);
@@ -1005,7 +1006,7 @@ if (chatForm) {
         await saveMessageToDB('Agente', _out.respuesta);
       }
       
-      // ---- NUEVO: Si solo viene audio sin texto, mostrar mensaje indicativo ----
+      // ---- Solo mostrar mensaje de "solo audio" si NO hay texto ----
       if (!_out.respuesta && !_out.config_final && !_out.output && audioUrl) {
         appendMessage('Agente', '🎵 Respuesta enviada como audio (sin texto)');
         await saveMessageToDB('Agente', '🎵 Respuesta enviada como audio');
