@@ -4,6 +4,8 @@ let chatId = null;
 let recognition = null;
 let isRecording = false;
 let loadingSpinnerElement = null;
+let isProcessingMessage = false; // Prevenir múltiples envíos
+let lastMessageTimestamp = 0; // Prevenir mensajes duplicados rápidos
 
 const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
@@ -176,7 +178,7 @@ function initializeVoiceRecognition() {
         }
       }
 
-      if (finalTranscript.trim()) {
+      if (finalTranscript.trim() && !isProcessingMessage) {
         console.log('📝 Transcripción final:', finalTranscript);
         appendMessage('Tú', finalTranscript.trim());
         saveMessageToDB('Tú', finalTranscript.trim());
@@ -272,7 +274,25 @@ function toggleRecording() {
 // --- ENVÍO DE MENSAJES (UNIFICADO) ---
 async function sendMessage(message) {
   if (!message.trim()) return;
-
+  
+  // Prevenir múltiples ejecuciones simultaneas
+  if (isProcessingMessage) {
+    console.log('⚠️ Ya hay un mensaje siendo procesado, ignorando...');
+    return;
+  }
+  
+  // Prevenir mensajes duplicados muy rápidos (debounce de 2 segundos)
+  const now = Date.now();
+  if (now - lastMessageTimestamp < 2000) {
+    console.log('⚠️ Mensaje muy rápido, aplicando debounce...');
+    return;
+  }
+  
+  const timestamp = new Date().toISOString();
+  console.log(`🚀 [${timestamp}] Iniciando envío mensaje:`, message);
+  
+  isProcessingMessage = true;
+  lastMessageTimestamp = now;
   showLoadingSpinner();
 
   try {
@@ -365,6 +385,9 @@ async function sendMessage(message) {
   } catch (error) {
     hideLoadingSpinner();
     appendMessage('Agente', `Error de conexión: ${error.message}`);
+  } finally {
+    isProcessingMessage = false; // Liberar bloqueo SIEMPRE
+    console.log('✅ Bloqueo de mensaje liberado');
   }
 }
 
@@ -476,12 +499,26 @@ function showLoadingSpinner() {
   chatLog.appendChild(div);
   chatLog.scrollTop = chatLog.scrollHeight;
   loadingSpinnerElement = div;
+  
+  // Deshabilitar botón de envío
+  const submitBtn = chatForm.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Enviando...';
+  }
 }
 
 function hideLoadingSpinner() {
   if (loadingSpinnerElement) {
     chatLog.removeChild(loadingSpinnerElement);
     loadingSpinnerElement = null;
+  }
+  
+  // Rehabilitar botón de envío
+  const submitBtn = chatForm.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Enviar';
   }
 }
 
@@ -644,7 +681,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chatForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const message = chatInput.value.trim();
-      if (!message) return;
+      if (!message || isProcessingMessage) return;
 
       appendMessage('Tú', message);
       await saveMessageToDB('Tú', message);
