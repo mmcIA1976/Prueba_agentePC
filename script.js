@@ -156,26 +156,20 @@ let currentTranscript = '';
 let hasSpokenRecently = false;
 
 function initializeVoiceRecognition() {
-  // Protección global robusta
-  if (window.AppConfiguradorPC && window.AppConfiguradorPC.voiceInitialized) {
-    console.log('⚠️ Reconocimiento de voz ya inicializado, saltando...');
+  // PROTECCIÓN ABSOLUTA - Si ya existe recognition, no hacer nada
+  if (window.recognition || window.voiceSystemReady) {
+    console.log('⚠️ Sistema de voz ya activo, bloqueando inicialización...');
     return;
   }
 
-  // Inicializar objeto global si no existe
-  if (!window.AppConfiguradorPC) {
-    window.AppConfiguradorPC = {
-      initialized: false,
-      voiceInitialized: false
-    };
-  }
-
-  window.AppConfiguradorPC.voiceInitialized = true;
+  // Marcar como inicializado ANTES de hacer cualquier cosa
+  window.voiceSystemReady = true;
   console.log('🎤 Inicializando reconocimiento de voz una sola vez...');
 
   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SpeechRecognition();
+    window.recognition = new SpeechRecognition();
+    recognition = window.recognition;
 
     recognition.continuous = true;
     recognition.interimResults = true;
@@ -744,61 +738,52 @@ window.toggleAudioPlayer = function() {
 };
 
 // --- INICIALIZACIÓN ---
-// Protección global ultra-robusta
-if (!window.AppConfiguradorPC) {
-  window.AppConfiguradorPC = {
-    initialized: false,
-    voiceInitialized: false
-  };
-}
+// Protección simple pero efectiva
+if (!window.appInitialized) {
+  window.appInitialized = true;
 
-function initializeApp() {
-  // Protección absoluta contra múltiples inicializaciones
-  if (window.AppConfiguradorPC.initialized) {
-    console.log('⚠️ App ya inicializada, saltando...');
-    return;
-  }
-  
-  window.AppConfiguradorPC.initialized = true;
-  console.log('🚀 Inicializando aplicación UNA SOLA VEZ...');
+  function initializeApp() {
+    console.log('🚀 Inicializando aplicación UNA SOLA VEZ...');
 
-  // Verificar si hay sesión activa primero
-  const hasSession = checkExistingSession();
+    // Verificar si hay sesión activa primero
+    const hasSession = checkExistingSession();
 
-  // Solo mostrar login si no hay sesión
-  if (!hasSession) {
-    showLoginScreen();
-  }
+    // Solo mostrar login si no hay sesión
+    if (!hasSession) {
+      showLoginScreen();
+    }
 
-  // Event listeners
-  const micButton = document.getElementById('mic-button');
-  if (micButton) {
-    micButton.addEventListener('click', toggleRecording);
-    updateMicButton();
-  }
+    // Event listeners básicos
+    const micButton = document.getElementById('mic-button');
+    if (micButton && !micButton.hasAttribute('data-initialized')) {
+      micButton.setAttribute('data-initialized', 'true');
+      micButton.addEventListener('click', toggleRecording);
+      updateMicButton();
+    }
 
-  if (chatForm) {
-    chatForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const message = chatInput.value.trim();
-      if (!message || isProcessingMessage) return;
+    if (chatForm && !chatForm.hasAttribute('data-initialized')) {
+      chatForm.setAttribute('data-initialized', 'true');
+      chatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const message = chatInput.value.trim();
+        if (!message || isProcessingMessage) return;
 
-      appendMessage('Tú', message);
-      await saveMessageToDB('Tú', message);
-      chatInput.value = '';
+        appendMessage('Tú', message);
+        await saveMessageToDB('Tú', message);
+        chatInput.value = '';
 
-      await sendMessage(message);
-    });
+        await sendMessage(message);
+      });
+    }
+
+    // Inicializar reconocimiento de voz una sola vez
+    initializeVoiceRecognition();
   }
 
-  // Inicializar reconocimiento de voz una sola vez
-  initializeVoiceRecognition();
-}
-
-// Ejecutar SOLO UNA VEZ usando múltiples protecciones
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeApp, { once: true });
-} else {
-  // DOM ya está listo, ejecutar inmediatamente
-  initializeApp();
+  // Ejecutar cuando el DOM esté listo
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp, { once: true });
+  } else {
+    initializeApp();
+  }
 }
