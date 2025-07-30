@@ -333,7 +333,8 @@ async function sendMessage(message) {
     console.log('🔍 Datos recibidos de N8N:', _out);
 
     // Mostrar configuración si existe
-    if (_out && _out.isConfigFinal === true && _out.config_final) {
+    if (_out && _out.config_final && Array.isArray(_out.config_final) && _out.config_final.length > 0) {
+      console.log('✅ Renderizando configuración final:', _out.config_final);
       renderConfiguracion(_out.config_final);
     } else {
       configContainer.innerHTML = '';
