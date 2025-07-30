@@ -6,7 +6,6 @@ let isRecording = false;
 let loadingSpinnerElement = null;
 let isProcessingMessage = false; // Prevenir múltiples envíos
 let lastMessageTimestamp = 0; // Prevenir mensajes duplicados rápidos
-let voiceInitialized = false; // Prevenir múltiples inicializaciones
 
 const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
@@ -157,13 +156,22 @@ let currentTranscript = '';
 let hasSpokenRecently = false;
 
 function initializeVoiceRecognition() {
-  // Prevenir múltiples inicializaciones
-  if (voiceInitialized) {
+  // Protección global robusta
+  if (window.AppConfiguradorPC && window.AppConfiguradorPC.voiceInitialized) {
     console.log('⚠️ Reconocimiento de voz ya inicializado, saltando...');
     return;
   }
 
-  console.log('🎤 Inicializando reconocimiento de voz...');
+  // Inicializar objeto global si no existe
+  if (!window.AppConfiguradorPC) {
+    window.AppConfiguradorPC = {
+      initialized: false,
+      voiceInitialized: false
+    };
+  }
+
+  window.AppConfiguradorPC.voiceInitialized = true;
+  console.log('🎤 Inicializando reconocimiento de voz una sola vez...');
 
   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -276,11 +284,9 @@ function initializeVoiceRecognition() {
     };
 
     console.log('✅ Reconocimiento de voz configurado correctamente');
-    voiceInitialized = true; // Marcar como inicializado
     setupVoiceButton();
   } else {
     console.log('❌ Web Speech API no disponible en este navegador');
-    voiceInitialized = true; // Marcar como inicializado aunque no funcione
     showVoiceUnavailable();
   }
 }
@@ -750,17 +756,23 @@ window.toggleAudioPlayer = function() {
 };
 
 // --- INICIALIZACIÓN ---
-let appInitialized = false; // Prevenir inicialización múltiple
+// Protección global ultra-robusta
+if (!window.AppConfiguradorPC) {
+  window.AppConfiguradorPC = {
+    initialized: false,
+    voiceInitialized: false
+  };
+}
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Prevenir múltiples inicializaciones
-  if (appInitialized) {
+function initializeApp() {
+  // Protección absoluta contra múltiples inicializaciones
+  if (window.AppConfiguradorPC.initialized) {
     console.log('⚠️ App ya inicializada, saltando...');
     return;
   }
-  appInitialized = true;
-
-  console.log('🚀 Inicializando aplicación...');
+  
+  window.AppConfiguradorPC.initialized = true;
+  console.log('🚀 Inicializando aplicación UNA SOLA VEZ...');
 
   // Verificar si hay sesión activa primero
   const hasSession = checkExistingSession();
@@ -793,4 +805,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Inicializar reconocimiento de voz una sola vez
   initializeVoiceRecognition();
-});
+}
+
+// Ejecutar SOLO UNA VEZ usando múltiples protecciones
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeApp, { once: true });
+} else {
+  // DOM ya está listo, ejecutar inmediatamente
+  initializeApp();
+}
