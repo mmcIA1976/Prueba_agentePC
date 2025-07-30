@@ -109,7 +109,7 @@ function logout() {
 function checkExistingSession() {
   const savedUser = localStorage.getItem('currentUser');
   const savedChatId = localStorage.getItem('chatId');
-  
+
   if (savedUser && savedChatId) {
     try {
       currentUser = JSON.parse(savedUser);
@@ -178,7 +178,7 @@ function initializeVoiceRecognition() {
     recognition.onresult = (event) => {
       let interimTranscript = '';
       let finalTranscript = '';
-      
+
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
@@ -191,20 +191,20 @@ function initializeVoiceRecognition() {
       // Si hay transcripción (final o interim), resetear timeout
       if (finalTranscript.trim() || interimTranscript.trim()) {
         hasSpokenRecently = true;
-        
+
         // Limpiar timeout anterior
         if (voiceTimeout) {
           clearTimeout(voiceTimeout);
           voiceTimeout = null;
         }
-        
+
         // Actualizar transcript actual
         if (finalTranscript.trim()) {
           currentTranscript += finalTranscript;
         }
-        
+
         console.log('🎤 Detectando voz...', interimTranscript || finalTranscript);
-        
+
         // Establecer nuevo timeout de 4 segundos de silencio
         voiceTimeout = setTimeout(() => {
           if (currentTranscript.trim() && !isProcessingMessage && hasSpokenRecently) {
@@ -212,11 +212,11 @@ function initializeVoiceRecognition() {
             appendMessage('Tú', currentTranscript.trim());
             saveMessageToDB('Tú', currentTranscript.trim());
             sendMessage(currentTranscript.trim());
-            
+
             // Resetear
             currentTranscript = '';
             hasSpokenRecently = false;
-            
+
             // Detener reconocimiento automáticamente
             if (recognition && isRecording) {
               recognition.stop();
@@ -228,13 +228,13 @@ function initializeVoiceRecognition() {
 
     recognition.onerror = (event) => {
       console.error('❌ Error en reconocimiento de voz:', event.error);
-      
+
       // Limpiar timeout si hay error
       if (voiceTimeout) {
         clearTimeout(voiceTimeout);
         voiceTimeout = null;
       }
-      
+
       isRecording = false;
       currentTranscript = '';
       hasSpokenRecently = false;
@@ -254,13 +254,13 @@ function initializeVoiceRecognition() {
 
     recognition.onend = () => {
       console.log('⏹️ Reconocimiento de voz terminado');
-      
+
       // Limpiar timeout
       if (voiceTimeout) {
         clearTimeout(voiceTimeout);
         voiceTimeout = null;
       }
-      
+
       isRecording = false;
       currentTranscript = '';
       hasSpokenRecently = false;
@@ -328,13 +328,13 @@ function toggleRecording() {
     }
   } else {
     console.log('⏹️ Deteniendo reconocimiento de voz...');
-    
+
     // Limpiar timeout al detener manualmente
     if (voiceTimeout) {
       clearTimeout(voiceTimeout);
       voiceTimeout = null;
     }
-    
+
     // Procesar mensaje si hay contenido antes de detener
     if (currentTranscript.trim() && !isProcessingMessage) {
       console.log('📝 Procesando mensaje antes de detener:', currentTranscript);
@@ -342,11 +342,11 @@ function toggleRecording() {
       saveMessageToDB('Tú', currentTranscript.trim());
       sendMessage(currentTranscript.trim());
     }
-    
+
     // Resetear variables
     currentTranscript = '';
     hasSpokenRecently = false;
-    
+
     recognition.stop();
   }
 }
@@ -354,23 +354,23 @@ function toggleRecording() {
 // --- ENVÍO DE MENSAJES (UNIFICADO) ---
 async function sendMessage(message) {
   if (!message.trim()) return;
-  
+
   // Prevenir múltiples ejecuciones simultaneas
   if (isProcessingMessage) {
     console.log('⚠️ Ya hay un mensaje siendo procesado, ignorando...');
     return;
   }
-  
+
   // Prevenir mensajes duplicados muy rápidos (debounce de 2 segundos)
   const now = Date.now();
   if (now - lastMessageTimestamp < 2000) {
     console.log('⚠️ Mensaje muy rápido, aplicando debounce...');
     return;
   }
-  
+
   const timestamp = new Date().toISOString();
   console.log(`🚀 [${timestamp}] Iniciando envío mensaje:`, message);
-  
+
   isProcessingMessage = true;
   lastMessageTimestamp = now;
   showLoadingSpinner();
@@ -468,7 +468,19 @@ async function sendMessage(message) {
   } finally {
     isProcessingMessage = false; // Liberar bloqueo SIEMPRE
     console.log('✅ Bloqueo de mensaje liberado');
-  }
+
+      // Si estaba grabando y se detuvo por el envío, reiniciar automáticamente después de un breve delay
+      setTimeout(() => {
+        if (!isRecording && recognition && currentUser) {
+          console.log('🔄 Reiniciando reconocimiento automáticamente...');
+          try {
+            recognition.start();
+          } catch (error) {
+            console.log('ℹ️ No se pudo reiniciar automáticamente (normal si ya está activo)');
+          }
+        }
+      }, 1500); // Esperar 1.5 segundos antes de reiniciar
+    }
 }
 
 // --- AUDIO ---
@@ -579,7 +591,7 @@ function showLoadingSpinner() {
   chatLog.appendChild(div);
   chatLog.scrollTop = chatLog.scrollHeight;
   loadingSpinnerElement = div;
-  
+
   // Deshabilitar botón de envío
   const submitBtn = chatForm.querySelector('button[type="submit"]');
   if (submitBtn) {
@@ -593,7 +605,7 @@ function hideLoadingSpinner() {
     chatLog.removeChild(loadingSpinnerElement);
     loadingSpinnerElement = null;
   }
-  
+
   // Rehabilitar botón de envío
   const submitBtn = chatForm.querySelector('button[type="submit"]');
   if (submitBtn) {
@@ -744,7 +756,7 @@ window.toggleAudioPlayer = function() {
 document.addEventListener('DOMContentLoaded', () => {
   // Verificar si hay sesión activa primero
   const hasSession = checkExistingSession();
-  
+
   // Solo mostrar login si no hay sesión
   if (!hasSession) {
     showLoginScreen();
