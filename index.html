@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -26,7 +27,7 @@
     </div>
   </div>
 
-  <!-- App principal (sólo cuando está logueado) -->
+  <!-- App principal -->
   <div id="main-app" style="display: none;">
     <header>
       <div class="header-content">
@@ -39,10 +40,11 @@
         </div>
       </div>
     </header>
+
     <main>
       <div class="monitor-outer">
         <div class="monitor-inner">
-          <!-- Barra de progreso arriba -->
+          <!-- Barra de progreso -->
           <div class="progress-indicator">
             <div class="progress-bar-bg">
               <div class="progress-bar-fill" style="width: 40%;"></div>
@@ -58,7 +60,8 @@
               <span>Precisión de la recomendación: <b>40%</b></span>
             </div>
           </div>
-          <!-- Chatbox real -->
+
+          <!-- Chat -->
           <div id="chat-container">
             <div id="chat-log"></div>
             <form id="chat-form" autocomplete="off" style="display:flex; gap:8px;">
@@ -70,15 +73,15 @@
         </div>
         <div class="monitor-base"></div>
       </div>
-      <!-- Contenedor de audio externo -->
+
+      <!-- Contenedor de audio -->
       <div id="audio-container" style="display: none;"></div>
       
       <!-- Contenedores de configuración y fotos -->
       <div id="config-container"></div>
       <div id="fotos-container"></div>
-
-
     </main>
+
     <footer>
       <div class="footer-content">
         <span>Creado en Replit · 2025</span>
@@ -86,8 +89,6 @@
     </footer>
   </div>
 
-  <!-- Web Speech API - Nativo del navegador, no requiere librerías externas -->
-  <!-- Scripts locales -->
   <script src="script.js"></script>
 </body>
 </html>
