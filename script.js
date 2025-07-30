@@ -218,6 +218,9 @@ function initializeVoiceRecognition() {
 
             // Transcribir al chatbox
             chatInput.value = currentTranscript.trim();
+            
+            // FORZAR visualización del mensaje del usuario
+            console.log('📝 Mostrando mensaje del usuario en chat:', currentTranscript.trim());
             appendMessage('Tú', currentTranscript.trim());
             saveMessageToDB('Tú', currentTranscript.trim());
 
@@ -546,6 +549,13 @@ function playBinaryAudio(audioArrayBuffer) {
 
 // --- UI HELPERS ---
 function appendMessage(author, text) {
+  console.log(`💬 appendMessage llamada: ${author} - ${text.substring(0, 50)}...`);
+  
+  if (!chatLog) {
+    console.error('❌ chatLog no existe!');
+    return;
+  }
+  
   const div = document.createElement('div');
   const avatarImg = author === 'Tú' 
     ? '<img class="avatar" src="https://api.dicebear.com/7.x/personas/svg?seed=user" alt="User">'
@@ -554,6 +564,8 @@ function appendMessage(author, text) {
   div.className = `chat-message ${author === 'Tú' ? 'user' : 'agent'}`;
   div.innerHTML = `${avatarImg}<div>${text}</div>`;
   chatLog.appendChild(div);
+  
+  console.log(`✅ Mensaje agregado al DOM. Total mensajes: ${chatLog.children.length}`);
 
   if (author === 'Agente' && text.length > 250) {
     div.scrollIntoView({ behavior: 'smooth', block: 'start' });
