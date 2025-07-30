@@ -156,20 +156,17 @@ let currentTranscript = '';
 let hasSpokenRecently = false;
 
 function initializeVoiceRecognition() {
-  // PROTECCIÓN ABSOLUTA - Si ya existe recognition, no hacer nada
-  if (window.recognition || window.voiceSystemReady) {
-    console.log('⚠️ Sistema de voz ya activo, bloqueando inicialización...');
+  // Si ya existe, salir inmediatamente
+  if (recognition) {
+    console.log('⚠️ Reconocimiento ya existe, saliendo...');
     return;
   }
 
-  // Marcar como inicializado ANTES de hacer cualquier cosa
-  window.voiceSystemReady = true;
-  console.log('🎤 Inicializando reconocimiento de voz una sola vez...');
+  console.log('🎤 Inicializando reconocimiento de voz...');
 
   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    window.recognition = new SpeechRecognition();
-    recognition = window.recognition;
+    recognition = new SpeechRecognition();
 
     recognition.continuous = true;
     recognition.interimResults = true;
@@ -738,52 +735,42 @@ window.toggleAudioPlayer = function() {
 };
 
 // --- INICIALIZACIÓN ---
-// Protección simple pero efectiva
-if (!window.appInitialized) {
-  window.appInitialized = true;
+// SOLUCIÓN DEFINITIVA: Ejecutar solo al final del archivo
+document.addEventListener('DOMContentLoaded', function() {
+  // PROTECCIÓN ABSOLUTA
+  if (document.body.hasAttribute('data-app-ready')) {
+    return;
+  }
+  document.body.setAttribute('data-app-ready', 'true');
+  
+  console.log('🚀 Inicializando aplicación UNA SOLA VEZ...');
 
-  function initializeApp() {
-    console.log('🚀 Inicializando aplicación UNA SOLA VEZ...');
-
-    // Verificar si hay sesión activa primero
-    const hasSession = checkExistingSession();
-
-    // Solo mostrar login si no hay sesión
-    if (!hasSession) {
-      showLoginScreen();
-    }
-
-    // Event listeners básicos
-    const micButton = document.getElementById('mic-button');
-    if (micButton && !micButton.hasAttribute('data-initialized')) {
-      micButton.setAttribute('data-initialized', 'true');
-      micButton.addEventListener('click', toggleRecording);
-      updateMicButton();
-    }
-
-    if (chatForm && !chatForm.hasAttribute('data-initialized')) {
-      chatForm.setAttribute('data-initialized', 'true');
-      chatForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const message = chatInput.value.trim();
-        if (!message || isProcessingMessage) return;
-
-        appendMessage('Tú', message);
-        await saveMessageToDB('Tú', message);
-        chatInput.value = '';
-
-        await sendMessage(message);
-      });
-    }
-
-    // Inicializar reconocimiento de voz una sola vez
-    initializeVoiceRecognition();
+  // Verificar sesión
+  const hasSession = checkExistingSession();
+  if (!hasSession) {
+    showLoginScreen();
   }
 
-  // Ejecutar cuando el DOM esté listo
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeApp, { once: true });
-  } else {
-    initializeApp();
+  // Event listeners con protección
+  const micButton = document.getElementById('mic-button');
+  if (micButton) {
+    micButton.addEventListener('click', toggleRecording);
+    updateMicButton();
   }
-}
+
+  if (chatForm) {
+    chatForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const message = chatInput.value.trim();
+      if (!message || isProcessingMessage) return;
+
+      appendMessage('Tú', message);
+      await saveMessageToDB('Tú', message);
+      chatInput.value = '';
+      await sendMessage(message);
+    });
+  }
+
+  // Inicializar voz UNA SOLA VEZ
+  initializeVoiceRecognition();
+}, { once: true });
