@@ -526,6 +526,208 @@ footer {
   #chat-container, #config-container, #fotos-container { border-radius: 14px; }
   .login-logo { width: 58px; height: 58px; }
 }
+/* ---- REPRODUCTOR DE AUDIO EXTERNO ---- */
+#audio-container {
+  width: 96%;
+  max-width: 620px;
+  margin: 20px auto 16px auto;
+}
+
+.external-audio-player {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.25);
+  overflow: hidden;
+  animation: slideIn 0.3s ease-out;
+}
+
+.external-audio-player.binary-audio {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  box-shadow: 0 8px 32px rgba(40, 167, 69, 0.25);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.audio-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px 16px 24px;
+  background: rgba(0,0,0,0.1);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.audio-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: white;
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+.audio-toggle-btn {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.audio-toggle-btn:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.audio-content {
+  padding: 20px 24px;
+  color: white;
+}
+
+.audio-warning {
+  background: #ff6b35;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border-left: 4px solid #ff4757;
+}
+
+.warning-title {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.warning-text {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.audio-controls {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+
+.audio-btn {
+  background: rgba(255,255,255,0.9);
+  color: #333;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  flex: 1;
+  min-width: 140px;
+  transition: all 0.2s;
+}
+
+.audio-btn:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.listen-btn {
+  background: #28a745;
+  color: white;
+}
+
+.listen-btn:hover {
+  background: #218838;
+}
+
+.download-btn {
+  background: #007bff;
+  color: white;
+}
+
+.download-btn:hover {
+  background: #0056b3;
+}
+
+.play-btn {
+  background: #28a745;
+  color: white;
+}
+
+.play-btn:hover {
+  background: #218838;
+}
+
+.audio-player-wrapper {
+  background: rgba(255,255,255,0.1);
+  padding: 12px;
+  border-radius: 8px;
+  margin: 16px 0;
+}
+
+.audio-player-wrapper audio {
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+}
+
+.audio-instructions {
+  background: rgba(255,255,255,0.1);
+  padding: 12px;
+  border-radius: 8px;
+  margin: 16px 0 10px 0;
+}
+
+.instructions-title {
+  font-size: 12px;
+  color: #b8d4ff;
+  margin-bottom: 8px;
+}
+
+.instructions-text {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.audio-details {
+  margin-top: 10px;
+}
+
+.audio-details summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: #b8d4ff;
+  outline: none;
+}
+
+.technical-info {
+  font-size: 11px;
+  color: #d0d0d0;
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 4px;
+  line-height: 1.4;
+}
+
+.audio-status {
+  font-size: 14px;
+  color: #b8f5cd;
+  margin: 10px 0;
+  text-align: center;
+  font-weight: 500;
+}
+
 /* ---- CONFIGURACION FINAL (fuera del chat) ---- */
 .config-option {
   background: #fff;
