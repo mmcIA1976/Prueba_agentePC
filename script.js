@@ -1,61 +1,38 @@
 // ---- VARIABLES GLOBALES ----
 let currentUser = null;
 let chatId = null;
+let recognition = null;
+let isRecording = false;
+let loadingSpinnerElement = null;
 
 const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
 const chatLog = document.getElementById('chat-log');
 const configContainer = document.getElementById('config-container');
 const fotosContainer = document.getElementById('fotos-container');
-
 const manualLoginForm = document.getElementById('manual-login-form');
 const userNameInput = document.getElementById('user-name-input');
 const userEmailInput = document.getElementById('user-email-input');
 
 const N8N_API_URL = "https://mauriciomeseguer.up.railway.app/webhook/bf351844-0718-4d84-bd9c-e5fbea35a83b";
 
-// --- LIMPIEZA Y VALIDACIÓN ---
+// --- UTILIDADES ---
 function cleanText(text) {
   return text.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ@.\-_\s]/g, '').trim();
 }
+
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-// --- LOGIN MANUAL ---
-manualLoginForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  let name = cleanText(userNameInput.value);
-  let email = cleanText(userEmailInput.value).toLowerCase();
+function generateChatId() {
+  return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
 
-  if (name.length < 2 || name.length > 32) {
-    alert('Pon un nombre válido (2-32 caracteres).');
-    return;
-  }
-  if (!isValidEmail(email) || email.length > 60) {
-    alert('Pon un email válido (hasta 60 caracteres).');
-    return;
-  }
-
-  currentUser = {
-    id: email,
-    name: name,
-    email: email,
-    profileImage: ''
-  };
-  chatId = generateChatId();
-
-  await initializeUser(currentUser);
-
-  showMainApp();
-  updateUserUI();
-});
-
-// --- LLAMADAS API LOCAL EXPRESS ---
+// --- LLAMADAS API LOCAL ---
 async function callLocalAPI(endpoint, data) {
   try {
-    const url = `/api/${endpoint}`;
-    const response = await fetch(url, {
+    const response = await fetch(`/api/${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -70,12 +47,29 @@ async function callLocalAPI(endpoint, data) {
   }
 }
 
-// --- Generar ID único de chat ---
-function generateChatId() {
-  return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
+// --- LOGIN Y NAVEGACIÓN ---
+manualLoginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = cleanText(userNameInput.value);
+  const email = cleanText(userEmailInput.value).toLowerCase();
 
-// --- Mostrar pantalla de login ---
+  if (name.length < 2 || name.length > 32) {
+    alert('Pon un nombre válido (2-32 caracteres).');
+    return;
+  }
+  if (!isValidEmail(email) || email.length > 60) {
+    alert('Pon un email válido (hasta 60 caracteres).');
+    return;
+  }
+
+  currentUser = { id: email, name: name, email: email, profileImage: '' };
+  chatId = generateChatId();
+
+  await initializeUser(currentUser);
+  showMainApp();
+  updateUserUI();
+});
+
 function showLoginScreen() {
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('main-app').style.display = 'none';
@@ -85,29 +79,25 @@ function showLoginScreen() {
   manualLoginForm.reset();
 }
 
-// --- Mostrar app principal ---
 function showMainApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('main-app').style.display = 'block';
 }
 
-// --- Actualizar UI del usuario ---
 function updateUserUI() {
   if (currentUser) {
-    document.getElementById('user-avatar').src =
-      `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(currentUser.name)}`;
+    document.getElementById('user-avatar').src = `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(currentUser.name)}`;
     document.getElementById('user-name').textContent = currentUser.name || 'Usuario';
   }
 }
 
-// --- Cerrar sesión ---
 function logout() {
   currentUser = null;
   chatId = null;
   showLoginScreen();
 }
 
-// --- Inicializar usuario en base de datos ---
+// --- BASE DE DATOS ---
 async function initializeUser(usuario) {
   try {
     await callLocalAPI('init-user', usuario);
@@ -117,7 +107,6 @@ async function initializeUser(usuario) {
   }
 }
 
-// --- Guardar mensaje en base de datos local ---
 async function saveMessageToDB(author, content) {
   try {
     await callLocalAPI('save-message', {
@@ -131,14 +120,10 @@ async function saveMessageToDB(author, content) {
   }
 }
 
-// --- Voice Recognition Integration ---
-let recognition = null;
-let isRecording = false;
-
+// --- RECONOCIMIENTO DE VOZ ---
 function initializeVoiceRecognition() {
   console.log('🎤 Inicializando reconocimiento de voz...');
 
-  // Verificar si Web Speech API está disponible
   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRecognition();
@@ -156,7 +141,6 @@ function initializeVoiceRecognition() {
 
     recognition.onresult = (event) => {
       let finalTranscript = '';
-
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
@@ -168,9 +152,7 @@ function initializeVoiceRecognition() {
         console.log('📝 Transcripción final:', finalTranscript);
         appendMessage('Tú', finalTranscript.trim());
         saveMessageToDB('Tú', finalTranscript.trim());
-
-        // Enviar automáticamente el mensaje transcrito
-        sendTranscribedMessage(finalTranscript.trim());
+        sendMessage(finalTranscript.trim());
       }
     };
 
@@ -181,15 +163,9 @@ function initializeVoiceRecognition() {
 
       let errorMsg = 'Error en el reconocimiento de voz';
       switch(event.error) {
-        case 'no-speech':
-          errorMsg = 'No se detectó voz. Intenta hablar más claro.';
-          break;
-        case 'audio-capture':
-          errorMsg = 'No se pudo acceder al micrófono.';
-          break;
-        case 'not-allowed':
-          errorMsg = 'Permisos de micrófono denegados.';
-          break;
+        case 'no-speech': errorMsg = 'No se detectó voz. Intenta hablar más claro.'; break;
+        case 'audio-capture': errorMsg = 'No se pudo acceder al micrófono.'; break;
+        case 'not-allowed': errorMsg = 'Permisos de micrófono denegados.'; break;
       }
       appendMessage('Sistema', `❌ ${errorMsg}`);
     };
@@ -203,7 +179,6 @@ function initializeVoiceRecognition() {
 
     console.log('✅ Reconocimiento de voz configurado correctamente');
     setupVoiceButton();
-
   } else {
     console.log('❌ Web Speech API no disponible en este navegador');
     showVoiceUnavailable();
@@ -220,7 +195,6 @@ function setupVoiceButton() {
 }
 
 function showVoiceUnavailable() {
-  console.log('📢 Función de voz no disponible');
   const micButton = document.getElementById('mic-button');
   if (micButton) {
     micButton.style.opacity = '0.5';
@@ -229,135 +203,6 @@ function showVoiceUnavailable() {
   }
 }
 
-// Función para enviar mensaje transcrito automáticamente
-async function sendTranscribedMessage(message) {
-  if (!message.trim()) return;
-
-  showLoadingSpinner();
-
-  try {
-    console.log('Enviando mensaje transcrito a N8N:', message);
-    const response = await fetch(N8N_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        mensaje: message,
-        user_id: currentUser ? currentUser.id : null,
-        chat_id: chatId,
-        user_name: currentUser ? currentUser.name : 'Usuario'
-      })
-    });
-
-    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-
-    // Verificar Content-Type para transcripción también
-    const contentType = response.headers.get('Content-Type');
-    console.log('🎤 Content-Type de respuesta transcrita:', contentType);
-
-    let data;
-    let audioBinaryData = null;
-
-    if (contentType && contentType.includes('audio/')) {
-      // Es audio binario para transcripción
-      console.log('🎵 Respuesta de transcripción es audio binario');
-      audioBinaryData = await response.arrayBuffer();
-      data = { audio_binary: true, mensaje: 'Audio transcrito recibido como binario' };
-    } else {
-      // Es JSON normal
-      data = await response.json();
-    }
-
-    hideLoadingSpinner();
-
-    // ---- MANEJAR AUDIO BINARIO EN TRANSCRIPCIÓN ----
-    if (audioBinaryData) {
-      console.log('🎤 Procesando audio binario de transcripción:', audioBinaryData.byteLength, 'bytes');
-
-      // Intentar extraer texto de headers HTTP
-      const textFromHeader = response.headers.get('x-response-text') || 
-                            response.headers.get('x-output-text') || 
-                            response.headers.get('x-agent-message');
-
-      if (textFromHeader) {
-        console.log('📝 ✅ [Transcripción] Texto encontrado en header HTTP:', textFromHeader);
-        appendMessage('Agente', textFromHeader);
-        await saveMessageToDB('Agente', textFromHeader);
-      } else {
-        console.log('❌ [Transcripción] No se encontró texto en headers HTTP para audio binario');
-        console.log('📋 [Transcripción] Headers disponibles:', [...response.headers.entries()]);
-
-        // Debugging adicional: mostrar TODOS los headers uno por uno
-        console.log('🔍 DEBUGGING DETALLADO DE HEADERS:');
-        for (const [key, value] of response.headers.entries()) {
-          console.log(`   📋 Header: "${key}" = "${value}"`);
-        }
-
-        // Verificar headers específicos que esperamos
-        const headerNames = ['x-response-text', 'x-output-text', 'x-agent-message', 'X-Response-Text', 'X-Output-Text', 'X-Agent-Message'];
-        console.log('🔍 Verificando headers esperados:');
-        headerNames.forEach(headerName => {
-          const value = response.headers.get(headerName);
-          console.log(`   🔍 "${headerName}": ${value ? `"${value}"` : 'NO ENCONTRADO'}`);
-        });
-      }
-
-      playBinaryAudio(audioBinaryData);
-      return; // Audio procesado
-    }
-
-    // --- Compatibilidad con respuesta anidada tipo [{output: { ... }}] ---
-    const _out = Array.isArray(data) && data.length && data[0] ? data[0] : data;
-
-    // ---- DEBUGGING: Analizar respuesta para mensaje transcrito ----
-    console.log('🎤 Respuesta para mensaje transcrito:', JSON.stringify(data, null, 2));
-
-    // Audio solo será binario en transcripción también
-
-    if (_out && _out.isConfigFinal === true && _out.config_final) {
-      renderConfiguracion(_out.config_final);
-    } else {
-      configContainer.innerHTML = '';
-    }
-
-    // ---- SIEMPRE mostrar texto del agente cuando esté disponible ----
-    let textoMostrado = false;
-
-    // Verificar campo "output" primero
-    if (_out && _out.output && typeof _out.output === "string" && _out.output.trim()) {
-      console.log('📝 [Transcripción] ✅ MOSTRANDO texto del campo "output":', _out.output.substring(0, 100) + '...');
-      console.log('📝 [Transcripción] 🔍 Longitud del texto:', _out.output.length);
-      appendMessage('Agente', _out.output);
-      await saveMessageToDB('Agente', _out.output);
-      textoMostrado = true;
-    } else {
-      console.log('📝 [Transcripción] ❌ No se encontró campo "output" válido');
-      console.log('📝 [Transcripción] 🔍 _out existe:', !!_out);
-      console.log('📝 [Transcripción] 🔍 _out.output existe:', !!(_out && _out.output));
-      console.log('📝 [Transcripción] 🔍 _out.output es string:', typeof _out?.output);
-      console.log('📝 [Transcripción] 🔍 _out.output contenido:', _out?.output);
-    }
-
-    // Verificar campo "respuesta" como alternativa SOLO si no hay output
-    if (!textoMostrado && _out && _out.respuesta && typeof _out.respuesta === "string" && _out.respuesta.trim()) {
-      console.log('📝 [Transcripción] Mostrando texto del campo "respuesta":', _out.respuesta.substring(0, 100) + '...');
-      appendMessage('Agente', _out.respuesta);
-      await saveMessageToDB('Agente', _out.respuesta);
-      textoMostrado = true;
-    }
-
-    // Solo mostrar error si NO hay texto Y NO hay configuración
-    if (!textoMostrado && !_out.config_final) {
-      console.log('❌ [Transcripción] No se encontró texto válido en respuesta');
-      appendMessage('Agente', 'No se recibió respuesta del agente. (Revisa el flujo de n8n)');
-    }
-
-  } catch (error) {
-    hideLoadingSpinner();
-    appendMessage('Agente', `Error de conexión: ${error.message}`);
-  }
-}
-
-// Función para actualizar el botón del micrófono
 function updateMicButton() {
   const micButton = document.getElementById('mic-button');
   if (!micButton) return;
@@ -367,17 +212,14 @@ function updateMicButton() {
     micButton.classList.add('recording');
     micButton.title = 'Detener conversación';
     micButton.style.backgroundColor = '#ff4757';
-    micButton.style.color = 'white';
   } else {
     micButton.textContent = '🎤';
     micButton.classList.remove('recording');
     micButton.title = 'Iniciar conversación';
     micButton.style.backgroundColor = '#2ed573';
-    micButton.style.color = 'white';
   }
 }
 
-// Función para el botón del micrófono
 function toggleRecording() {
   if (!recognition) {
     console.log('❌ Reconocimiento de voz no disponible');
@@ -399,330 +241,187 @@ function toggleRecording() {
   }
 }
 
-// Función eliminada - solo audio binario
+// --- ENVÍO DE MENSAJES (UNIFICADO) ---
+async function sendMessage(message) {
+  if (!message.trim()) return;
 
-// Funciones de URLs eliminadas - solo audio binario
-// Función para reproducir audio binario directo FUERA del chatbox
-function playBinaryAudio(audioArrayBuffer) {
+  showLoadingSpinner();
+
   try {
-    console.log('🎵 Reproduciendo audio binario directo:', audioArrayBuffer.byteLength, 'bytes');
+    console.log('Enviando mensaje a N8N:', message);
+    const response = await fetch(N8N_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mensaje: message,
+        user_id: currentUser ? currentUser.id : null,
+        chat_id: chatId,
+        user_name: currentUser ? currentUser.name : 'Usuario'
+      })
+    });
 
-    // Crear Blob del audio
-    const audioBlob = new Blob([audioArrayBuffer], { type: 'audio/mpeg' });
-    const audioUrl = URL.createObjectURL(audioBlob);
+    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
 
-    console.log('✅ Blob de audio creado:', audioUrl);
+    const contentType = response.headers.get('Content-Type');
+    console.log('🔍 Content-Type de respuesta:', contentType);
 
-    // Limpiar contenedor de audio previo
-    const audioContainer = document.getElementById('audio-container');
-    if (audioContainer) {
-      audioContainer.innerHTML = '';
+    let data;
+    let audioBinaryData = null;
+
+    if (contentType && contentType.includes('audio/')) {
+      console.log('🎵 Respuesta es audio binario');
+      audioBinaryData = await response.arrayBuffer();
+      data = { audio_binary: true };
+    } else {
+      console.log('📄 Respuesta es JSON');
+      data = await response.json();
     }
 
-    // Crear elemento de audio dinámico FUERA del chatbox
-    const audioId = 'binary_audio_' + Date.now();
+    hideLoadingSpinner();
 
-    const audioContent = `
-      <div class="external-audio-player binary-audio">
-        <div class="audio-header">
-          <div class="audio-title">
-            <span style="font-size: 1.5em;">🎵</span>
-            <strong>Audio Directo de N8N</strong>
-          </div>
-          <button onclick="toggleAudioPlayer()" class="audio-toggle-btn">
-            ➖ Minimizar
-          </button>
-        </div>
-        <div class="audio-content" id="audio-content">
-          <div class="audio-player-wrapper">
-            <audio id="audio-${audioId}" controls preload="auto">
-              <source src="${audioUrl}" type="audio/mpeg">
-              Tu navegador no soporta este audio.
-            </audio>
-          </div>
-          <div class="audio-controls">
-            <button onclick="document.getElementById('audio-${audioId}').play()" class="audio-btn play-btn">
-              ▶️ Reproducir
-            </button>
-            <button onclick="downloadBinaryAudio('${audioUrl}')" class="audio-btn download-btn">
-              📥 Descargar MP3
-            </button>
-          </div>
-          <div id="status-${audioId}" class="audio-status">✅ Audio cargado directamente</div>
-        </div>
-      </div>
-    `;
+    // Manejar audio binario
+    if (audioBinaryData) {
+      console.log('🎵 Procesando audio binario:', audioBinaryData.byteLength, 'bytes');
 
-    // Agregar al contenedor de audio externo
-    if (audioContainer) {
-      audioContainer.innerHTML = audioContent;
-      audioContainer.style.display = 'block';
+      const textFromHeader = response.headers.get('x-response-text') || 
+                            response.headers.get('x-output-text') || 
+                            response.headers.get('x-agent-message');
+
+      if (textFromHeader) {
+        console.log('📝 ✅ Texto encontrado en header:', textFromHeader);
+        appendMessage('Agente', textFromHeader);
+        await saveMessageToDB('Agente', textFromHeader);
+      } else {
+        console.log('❌ No se encontró texto en headers para audio binario');
+      }
+
+      playBinaryAudio(audioBinaryData);
+      return;
     }
 
-    // Configurar elemento de audio
-    const audioElement = document.getElementById(`audio-${audioId}`);
-    const statusElement = document.getElementById(`status-${audioId}`);
+    // Procesar respuesta JSON
+    const _out = Array.isArray(data) && data.length && data[0] ? data[0] : data;
 
-    if (audioElement && statusElement) {
-      // Event listeners para feedback
-      audioElement.addEventListener('loadeddata', () => {
-        console.log('✅ Audio binario cargado y listo');
-        statusElement.textContent = '✅ Audio listo para reproducir';
-
-        // Intentar reproducción automática
-        setTimeout(() => {
-          const playPromise = audioElement.play();
-          if (playPromise !== undefined) {
-            playPromise
-              .then(() => {
-                console.log('🎵 ¡Audio binario reproduciéndose automáticamente!');
-                statusElement.textContent = '🎵 ¡Reproduciendo automáticamente!';
-              })
-              .catch(error => {
-                console.log('⚠️ Autoplay bloqueado:', error.message);
-                statusElement.textContent = '⚠️ Haz clic en ▶️ para reproducir';
-              });
-          }
-        }, 500);
-      });
-
-      audioElement.addEventListener('play', () => {
-        console.log('▶️ Audio binario reproduciéndose');
-        statusElement.textContent = '▶️ Reproduciendo audio...';
-      });
-
-      audioElement.addEventListener('ended', () => {
-        console.log('🏁 Audio binario terminado');
-        statusElement.textContent = '🏁 Reproducción completada ✅';
-      });
-
-      audioElement.addEventListener('error', (e) => {
-        console.error('❌ Error en audio binario:', audioElement.error);
-        statusElement.textContent = '❌ Error al reproducir audio';
-        statusElement.style.color = '#ffcccb';
-      });
+    // Mostrar configuración si existe
+    if (_out && _out.isConfigFinal === true && _out.config_final) {
+      renderConfiguracion(_out.config_final);
+    } else {
+      configContainer.innerHTML = '';
     }
 
-    // Liberar URL después de un tiempo para ahorrar memoria
-    setTimeout(() => {
-      URL.revokeObjectURL(audioUrl);
-      console.log('🧹 URL de audio liberada de memoria');
-    }, 600000); // 10 minutos
+    // Mostrar texto del agente
+    let textoMostrado = false;
+
+    if (_out && _out.output && typeof _out.output === "string" && _out.output.trim()) {
+      console.log('📝 ✅ Mostrando texto del campo "output"');
+      appendMessage('Agente', _out.output);
+      await saveMessageToDB('Agente', _out.output);
+      textoMostrado = true;
+    } else if (_out && _out.respuesta && typeof _out.respuesta === "string" && _out.respuesta.trim()) {
+      console.log('📝 Mostrando texto del campo "respuesta"');
+      appendMessage('Agente', _out.respuesta);
+      await saveMessageToDB('Agente', _out.respuesta);
+      textoMostrado = true;
+    }
+
+    if (!textoMostrado && !_out.config_final) {
+      console.log('❌ No se encontró texto válido en respuesta');
+      appendMessage('Agente', 'No se recibió respuesta del agente.');
+    }
 
   } catch (error) {
-    console.error('❌ Error procesando audio binario:', error);
+    hideLoadingSpinner();
+    appendMessage('Agente', `Error de conexión: ${error.message}`);
+  }
+}
+
+// --- AUDIO ---
+function playBinaryAudio(audioArrayBuffer) {
+  try {
+    console.log('🎵 Reproduciendo audio binario:', audioArrayBuffer.byteLength, 'bytes');
+
+    const audioBlob = new Blob([audioArrayBuffer], { type: 'audio/mpeg' });
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audioContainer = document.getElementById('audio-container');
+
+    if (audioContainer) {
+      const audioId = 'binary_audio_' + Date.now();
+
+      audioContainer.innerHTML = `
+        <div class="external-audio-player binary-audio">
+          <div class="audio-header">
+            <div class="audio-title">
+              <span style="font-size: 1.5em;">🎵</span>
+              <strong>Audio de Respuesta</strong>
+            </div>
+            <button onclick="toggleAudioPlayer()" class="audio-toggle-btn">➖ Minimizar</button>
+          </div>
+          <div class="audio-content" id="audio-content">
+            <div class="audio-player-wrapper">
+              <audio id="audio-${audioId}" controls preload="auto">
+                <source src="${audioUrl}" type="audio/mpeg">
+              </audio>
+            </div>
+            <div class="audio-controls">
+              <button onclick="document.getElementById('audio-${audioId}').play()" class="audio-btn play-btn">▶️ Reproducir</button>
+              <button onclick="downloadBinaryAudio('${audioUrl}')" class="audio-btn download-btn">📥 Descargar</button>
+            </div>
+            <div id="status-${audioId}" class="audio-status">✅ Audio cargado</div>
+          </div>
+        </div>
+      `;
+
+      audioContainer.style.display = 'block';
+
+      const audioElement = document.getElementById(`audio-${audioId}`);
+      const statusElement = document.getElementById(`status-${audioId}`);
+
+      if (audioElement && statusElement) {
+        audioElement.addEventListener('loadeddata', () => {
+          console.log('✅ Audio cargado y listo');
+          statusElement.textContent = '✅ Audio listo';
+
+          setTimeout(() => {
+            const playPromise = audioElement.play();
+            if (playPromise !== undefined) {
+              playPromise
+                .then(() => {
+                  console.log('🎵 Audio reproduciéndose automáticamente');
+                  statusElement.textContent = '🎵 Reproduciendo...';
+                })
+                .catch(() => {
+                  statusElement.textContent = '⚠️ Haz clic en ▶️ para reproducir';
+                });
+            }
+          }, 500);
+        });
+
+        audioElement.addEventListener('ended', () => {
+          statusElement.textContent = '🏁 Reproducción completada';
+        });
+
+        audioElement.addEventListener('error', () => {
+          statusElement.textContent = '❌ Error al reproducir';
+        });
+      }
+    }
+
+    setTimeout(() => URL.revokeObjectURL(audioUrl), 600000);
+
+  } catch (error) {
+    console.error('❌ Error procesando audio:', error);
     appendMessage('Sistema', `❌ Error al procesar audio: ${error.message}`);
   }
 }
 
-// Función para descargar audio binario
-window.downloadBinaryAudio = function(blobUrl) {
-  console.log('📥 Descargando audio binario:', blobUrl);
-
-  const a = document.createElement('a');
-  a.href = blobUrl;
-  a.download = `audio_respuesta_${Date.now()}.mp3`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-
-  console.log('✅ Descarga de audio binario iniciada');
-};
-
-// Función eliminada - solo audio binario
-
-// Función para minimizar/expandir el reproductor de audio
-window.toggleAudioPlayer = function() {
-  const audioContent = document.getElementById('audio-content');
-  const toggleBtn = document.querySelector('.audio-toggle-btn');
-
-  if (audioContent && toggleBtn) {
-    if (audioContent.style.display === 'none') {
-      // Expandir
-      audioContent.style.display = 'block';
-      toggleBtn.textContent = '➖ Minimizar';
-      console.log('🔄 Reproductor de audio expandido');
-    } else {
-      // Minimizar
-      audioContent.style.display = 'none';
-      toggleBtn.textContent = '➕ Expandir';
-      console.log('🔄 Reproductor de audio minimizado');
-    }
-  }
-};
-
-// Función eliminada - solo audio binario
-
-// --- Inicializar la aplicación ---
-document.addEventListener('DOMContentLoaded', () => {
-  showLoginScreen();
-
-  // Verificar si estamos en el entorno desplegado
-  const isDeploy = window.location.hostname.includes('.replit.app') || window.location.hostname.includes('.replit.dev');
-  console.log('🌐 Entorno detectado:', isDeploy ? 'Replit Deploy' : 'Replit Preview');
-
-  // Event listener para el botón del micrófono
-  const micButton = document.getElementById('mic-button');
-  if (micButton) {
-    micButton.addEventListener('click', toggleRecording);
-    updateMicButton(); // Inicial styling
-  }
-
-  // Inicializar reconocimiento de voz cuando se carga la página
-  setTimeout(() => {
-    console.log('🚀 Iniciando reconocimiento de voz...');
-    initializeVoiceRecognition();
-  }, 1000);
-});
-
-// --- Chat envío de mensajes ---
-if (chatForm) {
-  chatForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const message = chatInput.value.trim();
-    if (!message) return;
-    appendMessage('Tú', message);
-    await saveMessageToDB('Tú', message);
-    chatInput.value = '';
-    showLoadingSpinner();
-    try {
-      console.log('Enviando mensaje a N8N:', message);
-      const response = await fetch(N8N_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mensaje: message,
-          user_id: currentUser ? currentUser.id : null,
-          chat_id: chatId,
-          user_name: currentUser ? currentUser.name : 'Usuario'
-        })
-      });
-      console.log('Estado de respuesta:', response.status);
-      if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-
-      // Verificar el Content-Type de la respuesta
-      const contentType = response.headers.get('Content-Type');
-      console.log('🔍 Content-Type de respuesta:', contentType);
-
-      let data;
-      let audioBinaryData = null;
-
-      if (contentType && contentType.includes('audio/')) {
-        // Es un archivo de audio binario directo
-        console.log('🎵 Respuesta es archivo de audio binario');
-        audioBinaryData = await response.arrayBuffer();
-        data = { audio_binary: true, mensaje: 'Audio recibido como archivo binario' };
-      } else {
-        // Es JSON normal
-        console.log('📄 Respuesta es JSON');
-        data = await response.json();
-      }
-      console.log('Respuesta de N8N:', data);
-      hideLoadingSpinner();
-
-      // ---- MANEJAR AUDIO BINARIO DIRECTO ----
-      if (audioBinaryData) {
-        console.log('🎵 Procesando archivo de audio binario:', audioBinaryData.byteLength, 'bytes');
-
-        // Intentar extraer texto de headers HTTP
-        const textFromHeader = response.headers.get('x-response-text') || 
-                              response.headers.get('x-output-text') || 
-                              response.headers.get('x-agent-message');
-
-        if (textFromHeader) {
-          console.log('📝 ✅ Texto encontrado en header HTTP:', textFromHeader);
-          appendMessage('Agente', textFromHeader);
-          await saveMessageToDB('Agente', textFromHeader);
-        } else {
-          console.log('❌ No se encontró texto en headers HTTP para audio binario');
-          console.log('📋 Headers disponibles:', [...response.headers.entries()]);
-
-        // Debugging adicional: mostrar TODOS los headers uno por uno
-        console.log('🔍 DEBUGGING DETALLADO DE HEADERS:');
-        for (const [key, value] of response.headers.entries()) {
-          console.log(`   📋 Header: "${key}" = "${value}"`);
-        }
-
-        // Verificar headers específicos que esperamos
-        const headerNames = ['x-response-text', 'x-output-text', 'x-agent-message', 'X-Response-Text', 'X-Output-Text', 'X-Agent-Message'];
-        console.log('🔍 Verificando headers esperados:');
-        headerNames.forEach(headerName => {
-          const value = response.headers.get(headerName);
-          console.log(`   🔍 "${headerName}": ${value ? `"${value}"` : 'NO ENCONTRADO'}`);
-        });
-      }
-
-        playBinaryAudio(audioBinaryData);
-        return; // Audio procesado
-      }
-
-      // --- Compatibilidad con respuesta anidada tipo [{output: { ... }}] ---
-      const _out = Array.isArray(data) && data.length && data[0] ? data[0] : data;
-
-      // ---- DEBUGGING COMPLETO: Verificar estructura completa ----
-      console.log('🔍 Respuesta RAW de N8N:', JSON.stringify(data, null, 2));
-      console.log('🔍 Respuesta procesada (_out):', JSON.stringify(_out, null, 2));
-      console.log('🔍 Campos disponibles en _out:', Object.keys(_out || {}));
-
-      // Audio solo será binario, no procesamos URLs
-
-      // ---- Mostrar configuración final solo si corresponde ----
-      if (_out && _out.isConfigFinal === true && _out.config_final) {
-        renderConfiguracion(_out.config_final);
-      } else {
-        configContainer.innerHTML = '';
-      }
-
-      // ---- SIEMPRE mostrar texto del agente cuando esté disponible ----
-      let textoMostrado = false;
-
-      // Verificar campo "output" primero
-      if (_out && _out.output && typeof _out.output === "string" && _out.output.trim()) {
-        console.log('📝 ✅ MOSTRANDO texto del campo "output":', _out.output.substring(0, 100) + '...');
-        console.log('📝 🔍 Longitud del texto:', _out.output.length);
-        appendMessage('Agente', _out.output);
-        await saveMessageToDB('Agente', _out.output);
-        textoMostrado = true;
-      } else {
-        console.log('📝 ❌ No se encontró campo "output" válido');
-        console.log('📝 🔍 _out existe:', !!_out);
-        console.log('📝 🔍 _out.output existe:', !!(_out && _out.output));
-        console.log('📝 🔍 _out.output es string:', typeof _out?.output);
-        console.log('📝 🔍 _out.output contenido:', _out?.output);
-      }
-
-      // Verificar campo "respuesta" como alternativa SOLO si no hay output
-      if (!textoMostrado && _out && _out.respuesta && typeof _out.respuesta === "string" && _out.respuesta.trim()) {
-        console.log('📝 Mostrando texto del campo "respuesta":', _out.respuesta.substring(0, 100) + '...');
-        appendMessage('Agente', _out.respuesta);
-        await saveMessageToDB('Agente', _out.respuesta);
-        textoMostrado = true;
-      }
-
-      // Solo mostrar error si NO hay texto Y NO hay configuración
-      if (!textoMostrado && !_out.config_final) {
-        console.log('❌ No se encontró texto válido en respuesta');
-        appendMessage('Agente', 'No se recibió respuesta del agente. (Revisa el flujo de n8n)');
-      }
-    } catch (error) {
-      hideLoadingSpinner();
-      appendMessage('Agente', `Error de conexión: ${error.message}`);
-    }
-  });
-}
-
-// --- UI helpers ---
+// --- UI HELPERS ---
 function appendMessage(author, text) {
   const div = document.createElement('div');
-  let avatarImg, clase;
-  if (author === 'Tú') {
-    avatarImg = '<img class="avatar" src="https://api.dicebear.com/7.x/personas/svg?seed=user" alt="User">';
-    clase = 'chat-message user';
-  } else {
-    avatarImg = '<img class="avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=robot" alt="IA">';
-    clase = 'chat-message agent';
-  }
-  div.className = clase;
+  const avatarImg = author === 'Tú' 
+    ? '<img class="avatar" src="https://api.dicebear.com/7.x/personas/svg?seed=user" alt="User">'
+    : '<img class="avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=robot" alt="IA">';
+
+  div.className = `chat-message ${author === 'Tú' ? 'user' : 'agent'}`;
   div.innerHTML = `${avatarImg}<div>${text}</div>`;
   chatLog.appendChild(div);
 
@@ -733,23 +432,19 @@ function appendMessage(author, text) {
   }
 }
 
-let loadingSpinnerElement = null;
 function showLoadingSpinner() {
   const div = document.createElement('div');
   div.className = 'loading-spinner';
   div.innerHTML = `
     <img class="avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=robot" alt="IA">
     <div class="spinner"></div>
-    <div class="loading-dots">
-      <span></span>
-      <span></span>
-      <span></span>
-    </div>
+    <div class="loading-dots"><span></span><span></span><span></span></div>
   `;
   chatLog.appendChild(div);
   chatLog.scrollTop = chatLog.scrollHeight;
   loadingSpinnerElement = div;
 }
+
 function hideLoadingSpinner() {
   if (loadingSpinnerElement) {
     chatLog.removeChild(loadingSpinnerElement);
@@ -757,39 +452,86 @@ function hideLoadingSpinner() {
   }
 }
 
-// Función eliminada - ahora usamos solo playAudioReliable()
-
-// --- MOSTRAR CONFIGURACION FINAL FUERA DEL CHAT ---
+// --- CONFIGURACIÓN ---
 function renderConfiguracion(config_final) {
-  configContainer.innerHTML = ''; // Limpiar anterior
+  configContainer.innerHTML = '';
   fotosContainer.innerHTML = '';
 
-  if (!config_final || !Array.isArray(config_final)) {
-    configContainer.innerHTML = ''; // Nada que mostrar
-    return;
-  }
+  if (!config_final || !Array.isArray(config_final)) return;
 
-  // Filtra solo las opciones que tienen al menos un componente (por si hay una vacía)
   const opcionesValidas = config_final.filter(opt => Array.isArray(opt.componentes) && opt.componentes.length);
+  if (opcionesValidas.length === 0) return;
 
-  // Si NO hay ninguna opción válida, no muestra nada
-  if (opcionesValidas.length === 0) {
-    configContainer.innerHTML = '<div class="config-option"><em>No se encontró configuración final para mostrar.</em></div>';
-    return;
-  }
-
-  // Renderiza todas las opciones válidas (AMD, Intel, etc.)
   opcionesValidas.forEach(option => {
     const title = option.nombre ? `<h3>${option.nombre} ${option.total ? `- ${option.total}` : ''}</h3>` : '';
     let html = `<div class="config-option">${title}<ul>`;
+
     option.componentes.forEach(comp => {
       html += `<li>
         <b>${comp.tipo || comp.nombre || ''}:</b> ${comp.modelo || comp.descripcion || ''}
         ${comp.precio ? `<span> · <b>${comp.precio}</b></span>` : ''}
-        ${comp.url ? ` · <a href="${comp.url}" target="_blank" rel="noopener">Comprar</a>` : ''}
+        ${comp.url ? ` · <a href="${comp.url}" target="_blank">Comprar</a>` : ''}
       </li>`;
     });
+
     html += '</ul></div>';
     configContainer.innerHTML += html;
   });
 }
+
+// --- FUNCIONES GLOBALES ---
+window.downloadBinaryAudio = function(blobUrl) {
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = `audio_respuesta_${Date.now()}.mp3`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
+
+window.toggleAudioPlayer = function() {
+  const audioContent = document.getElementById('audio-content');
+  const toggleBtn = document.querySelector('.audio-toggle-btn');
+
+  if (audioContent && toggleBtn) {
+    if (audioContent.style.display === 'none') {
+      audioContent.style.display = 'block';
+      toggleBtn.textContent = '➖ Minimizar';
+    } else {
+      audioContent.style.display = 'none';
+      toggleBtn.textContent = '➕ Expandir';
+    }
+  }
+};
+
+// --- INICIALIZACIÓN ---
+document.addEventListener('DOMContentLoaded', () => {
+  showLoginScreen();
+
+  // Event listeners
+  const micButton = document.getElementById('mic-button');
+  if (micButton) {
+    micButton.addEventListener('click', toggleRecording);
+    updateMicButton();
+  }
+
+  if (chatForm) {
+    chatForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const message = chatInput.value.trim();
+      if (!message) return;
+
+      appendMessage('Tú', message);
+      await saveMessageToDB('Tú', message);
+      chatInput.value = '';
+
+      await sendMessage(message);
+    });
+  }
+
+  // Inicializar reconocimiento de voz
+  setTimeout(() => {
+    console.log('🚀 Iniciando reconocimiento de voz...');
+    initializeVoiceRecognition();
+  }, 1000);
+});
