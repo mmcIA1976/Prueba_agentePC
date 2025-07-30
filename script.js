@@ -151,6 +151,10 @@ async function saveMessageToDB(author, content) {
 }
 
 // --- RECONOCIMIENTO DE VOZ ---
+let voiceTimeout = null;
+let currentTranscript = '';
+let hasSpokenRecently = false;
+
 function initializeVoiceRecognition() {
   console.log('🎤 Inicializando reconocimiento de voz...');
 
@@ -165,44 +169,101 @@ function initializeVoiceRecognition() {
     recognition.onstart = () => {
       console.log('🎤 Reconocimiento de voz iniciado');
       isRecording = true;
+      currentTranscript = '';
+      hasSpokenRecently = false;
       updateMicButton();
-      appendMessage('Sistema', '🎤 Escuchando... Habla ahora');
+      appendMessage('Sistema', '🎤 Escuchando... Habla tranquilo, tienes tiempo para pensar');
     };
 
     recognition.onresult = (event) => {
+      let interimTranscript = '';
       let finalTranscript = '';
+      
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
           finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
         }
       }
 
-      if (finalTranscript.trim() && !isProcessingMessage) {
-        console.log('📝 Transcripción final:', finalTranscript);
-        appendMessage('Tú', finalTranscript.trim());
-        saveMessageToDB('Tú', finalTranscript.trim());
-        sendMessage(finalTranscript.trim());
+      // Si hay transcripción (final o interim), resetear timeout
+      if (finalTranscript.trim() || interimTranscript.trim()) {
+        hasSpokenRecently = true;
+        
+        // Limpiar timeout anterior
+        if (voiceTimeout) {
+          clearTimeout(voiceTimeout);
+          voiceTimeout = null;
+        }
+        
+        // Actualizar transcript actual
+        if (finalTranscript.trim()) {
+          currentTranscript += finalTranscript;
+        }
+        
+        console.log('🎤 Detectando voz...', interimTranscript || finalTranscript);
+        
+        // Establecer nuevo timeout de 4 segundos de silencio
+        voiceTimeout = setTimeout(() => {
+          if (currentTranscript.trim() && !isProcessingMessage && hasSpokenRecently) {
+            console.log('⏰ Timeout de silencio alcanzado, procesando mensaje:', currentTranscript);
+            appendMessage('Tú', currentTranscript.trim());
+            saveMessageToDB('Tú', currentTranscript.trim());
+            sendMessage(currentTranscript.trim());
+            
+            // Resetear
+            currentTranscript = '';
+            hasSpokenRecently = false;
+            
+            // Detener reconocimiento automáticamente
+            if (recognition && isRecording) {
+              recognition.stop();
+            }
+          }
+        }, 4000); // 4 segundos de pausa
       }
     };
 
     recognition.onerror = (event) => {
       console.error('❌ Error en reconocimiento de voz:', event.error);
+      
+      // Limpiar timeout si hay error
+      if (voiceTimeout) {
+        clearTimeout(voiceTimeout);
+        voiceTimeout = null;
+      }
+      
       isRecording = false;
+      currentTranscript = '';
+      hasSpokenRecently = false;
       updateMicButton();
 
-      let errorMsg = 'Error en el reconocimiento de voz';
-      switch(event.error) {
-        case 'no-speech': errorMsg = 'No se detectó voz. Intenta hablar más claro.'; break;
-        case 'audio-capture': errorMsg = 'No se pudo acceder al micrófono.'; break;
-        case 'not-allowed': errorMsg = 'Permisos de micrófono denegados.'; break;
+      // Solo mostrar error si no es por falta de habla
+      if (event.error !== 'no-speech') {
+        let errorMsg = 'Error en el reconocimiento de voz';
+        switch(event.error) {
+          case 'audio-capture': errorMsg = 'No se pudo acceder al micrófono.'; break;
+          case 'not-allowed': errorMsg = 'Permisos de micrófono denegados.'; break;
+          case 'aborted': errorMsg = 'Reconocimiento cancelado.'; break;
+        }
+        appendMessage('Sistema', `❌ ${errorMsg}`);
       }
-      appendMessage('Sistema', `❌ ${errorMsg}`);
     };
 
     recognition.onend = () => {
       console.log('⏹️ Reconocimiento de voz terminado');
+      
+      // Limpiar timeout
+      if (voiceTimeout) {
+        clearTimeout(voiceTimeout);
+        voiceTimeout = null;
+      }
+      
       isRecording = false;
+      currentTranscript = '';
+      hasSpokenRecently = false;
       updateMicButton();
       appendMessage('Sistema', '⏹️ Reconocimiento de voz detenido');
     };
@@ -267,6 +328,25 @@ function toggleRecording() {
     }
   } else {
     console.log('⏹️ Deteniendo reconocimiento de voz...');
+    
+    // Limpiar timeout al detener manualmente
+    if (voiceTimeout) {
+      clearTimeout(voiceTimeout);
+      voiceTimeout = null;
+    }
+    
+    // Procesar mensaje si hay contenido antes de detener
+    if (currentTranscript.trim() && !isProcessingMessage) {
+      console.log('📝 Procesando mensaje antes de detener:', currentTranscript);
+      appendMessage('Tú', currentTranscript.trim());
+      saveMessageToDB('Tú', currentTranscript.trim());
+      sendMessage(currentTranscript.trim());
+    }
+    
+    // Resetear variables
+    currentTranscript = '';
+    hasSpokenRecently = false;
+    
     recognition.stop();
   }
 }
