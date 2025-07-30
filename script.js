@@ -249,14 +249,14 @@ async function sendTranscribedMessage(message) {
     });
 
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-    
+
     // Verificar Content-Type para transcripción también
     const contentType = response.headers.get('Content-Type');
     console.log('🎤 Content-Type de respuesta transcrita:', contentType);
-    
+
     let data;
     let audioBinaryData = null;
-    
+
     if (contentType && contentType.includes('audio/')) {
       // Es audio binario para transcripción
       console.log('🎵 Respuesta de transcripción es audio binario');
@@ -281,17 +281,17 @@ async function sendTranscribedMessage(message) {
 
     // ---- DEBUGGING: Analizar respuesta para mensaje transcrito ----
     console.log('🎤 Respuesta para mensaje transcrito:', JSON.stringify(data, null, 2));
-    
+
     // ---- Solo buscar URLs si NO es audio binario ----
     let audioUrl = null;
-    
+
     // Buscar URL de audio en diferentes campos
     const transcriptionAudioFields = ['data', 'audio', 'audioUrl', 'audio_url', 'audioData', 'sound', 'voice', 'audio_data', 'file', 'attachment', 'media'];
-    
+
     for (const field of transcriptionAudioFields) {
       if (_out && _out[field]) {
         console.log(`📊 Campo "${field}" encontrado en transcripción:`, typeof _out[field], _out[field]);
-        
+
         // Verificar si es una URL de audio
         if (typeof _out[field] === 'string' && 
             (_out[field].startsWith('http') ||
@@ -302,7 +302,7 @@ async function sendTranscribedMessage(message) {
         }
       }
     }
-    
+
     if (audioUrl) {
       console.log('🎵 Reproduciendo audio transcrito desde URL...');
       playAudioReliable(audioUrl);
@@ -316,19 +316,24 @@ async function sendTranscribedMessage(message) {
       configContainer.innerHTML = '';
     }
 
-    // ---- Mostrar texto del agente (output o respuesta) ----
-    if (_out.output && typeof _out.output === "string") {
+    // ---- SIEMPRE mostrar texto del agente cuando esté disponible ----
+    let textoMostrado = false;
+
+    if (_out.output && typeof _out.output === "string" && _out.output.trim()) {
       appendMessage('Agente', _out.output);
       await saveMessageToDB('Agente', _out.output);
+      textoMostrado = true;
     }
-    if (_out.respuesta) {
+
+    if (_out.respuesta && typeof _out.respuesta === "string" && _out.respuesta.trim()) {
       appendMessage('Agente', _out.respuesta);
       await saveMessageToDB('Agente', _out.respuesta);
+      textoMostrado = true;
     }
-    
-    // ---- Solo mostrar error si NO hay texto de ningún tipo ----
-    if (!_out.respuesta && !_out.config_final && !_out.output) {
-      appendMessage('Agente', 'No se recibió respuesta del agente.');
+
+    // Solo mostrar error si NO hay texto Y NO hay configuración
+    if (!textoMostrado && !_out.config_final) {
+      appendMessage('Agente', 'No se recibió respuesta del agente. (Revisa el flujo de n8n)');
     }
 
   } catch (error) {
@@ -384,7 +389,7 @@ function playAudioReliable(audioData) {
   try {
     console.log('🎵 Reproduciendo audio desde N8N:', typeof audioData);
     console.log('📊 URL completa del audio:', audioData);
-    
+
     // Convertir URL de Google Drive si es necesario
     let finalAudioUrl = audioData;
     if (audioData.includes('drive.google.com') && !audioData.includes('uc?')) {
@@ -395,16 +400,16 @@ function playAudioReliable(audioData) {
         console.log('🔄 URL convertida para descarga directa:', finalAudioUrl);
       }
     }
-    
+
     // Limpiar contenedor de audio previo
     const audioContainer = document.getElementById('audio-container');
     if (audioContainer) {
       audioContainer.innerHTML = '';
     }
-    
+
     // Crear elemento de audio dinámico FUERA del chatbox
     const audioId = 'response_audio_' + Date.now();
-    
+
     const audioContent = `
       <div class="external-audio-player">
         <div class="audio-header">
@@ -459,7 +464,7 @@ function playAudioReliable(audioData) {
     const audioElement = document.getElementById(`audio-${audioId}`);
     const statusElement = document.getElementById(`status-${audioId}`);
     const debugElement = document.getElementById(`debug-${audioId}`);
-    
+
     if (!audioElement || !statusElement || !debugElement) {
       console.error('❌ No se pudieron crear los elementos de audio');
       return;
@@ -503,7 +508,7 @@ function playAudioReliable(audioData) {
       statusElement.textContent = '📊 Datos cargados - Intentando reproducir...';
       debugElement.textContent = '📊 Datos listos para reproducción';
       clearTimeout(loadTimeout);
-      
+
       // Intentar reproducción automática
       setTimeout(() => {
         console.log('🎯 Intentando reproducción automática...');
@@ -554,10 +559,10 @@ function playAudioReliable(audioData) {
       console.error('❌ Error object:', audioElement.error);
       console.error('❌ Event:', e);
       clearTimeout(loadTimeout);
-      
+
       let errorMsg = 'Error desconocido';
       let debugMsg = 'Error sin detalles';
-      
+
       if (audioElement.error) {
         switch(audioElement.error.code) {
           case 1: 
@@ -578,7 +583,7 @@ function playAudioReliable(audioData) {
             break;
         }
       }
-      
+
       statusElement.textContent = `❌ ${errorMsg}`;
       statusElement.style.color = '#ffcccb';
       debugElement.textContent = `❌ ${debugMsg}`;
@@ -612,15 +617,15 @@ window.tryDirectPlay = function(audioId, url) {
   const audioElement = document.getElementById(`audio-${audioId}`);
   const statusElement = document.getElementById(`status-${audioId}`);
   const debugElement = document.getElementById(`debug-${audioId}`);
-  
+
   if (audioElement && statusElement) {
     console.log('🔄 Reintentando carga manual de audio...');
     statusElement.textContent = '🔄 Reintentando carga...';
     debugElement.textContent = '🔄 Recargando archivo desde Google Drive...';
-    
+
     audioElement.src = url;
     audioElement.load();
-    
+
     setTimeout(() => {
       audioElement.play()
         .then(() => {
@@ -642,22 +647,22 @@ window.tryDirectPlay = function(audioId, url) {
 function playBinaryAudio(audioArrayBuffer) {
   try {
     console.log('🎵 Reproduciendo audio binario directo:', audioArrayBuffer.byteLength, 'bytes');
-    
+
     // Crear Blob del audio
     const audioBlob = new Blob([audioArrayBuffer], { type: 'audio/mpeg' });
     const audioUrl = URL.createObjectURL(audioBlob);
-    
+
     console.log('✅ Blob de audio creado:', audioUrl);
-    
+
     // Limpiar contenedor de audio previo
     const audioContainer = document.getElementById('audio-container');
     if (audioContainer) {
       audioContainer.innerHTML = '';
     }
-    
+
     // Crear elemento de audio dinámico FUERA del chatbox
     const audioId = 'binary_audio_' + Date.now();
-    
+
     const audioContent = `
       <div class="external-audio-player binary-audio">
         <div class="audio-header">
@@ -698,13 +703,13 @@ function playBinaryAudio(audioArrayBuffer) {
     // Configurar elemento de audio
     const audioElement = document.getElementById(`audio-${audioId}`);
     const statusElement = document.getElementById(`status-${audioId}`);
-    
+
     if (audioElement && statusElement) {
       // Event listeners para feedback
       audioElement.addEventListener('loadeddata', () => {
         console.log('✅ Audio binario cargado y listo');
         statusElement.textContent = '✅ Audio listo para reproducir';
-        
+
         // Intentar reproducción automática
         setTimeout(() => {
           const playPromise = audioElement.play();
@@ -754,21 +759,21 @@ function playBinaryAudio(audioArrayBuffer) {
 // Función para descargar audio binario
 window.downloadBinaryAudio = function(blobUrl) {
   console.log('📥 Descargando audio binario:', blobUrl);
-  
+
   const a = document.createElement('a');
   a.href = blobUrl;
   a.download = `audio_respuesta_${Date.now()}.mp3`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  
+
   console.log('✅ Descarga de audio binario iniciada');
 };
 
 // Función para descargar audio desde URL
 window.downloadAudio = function(url) {
   console.log('📥 Iniciando descarga de audio:', url);
-  
+
   // Crear elemento de descarga temporal
   const a = document.createElement('a');
   a.href = url;
@@ -777,7 +782,7 @@ window.downloadAudio = function(url) {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  
+
   console.log('✅ Descarga iniciada');
 };
 
@@ -785,7 +790,7 @@ window.downloadAudio = function(url) {
 window.toggleAudioPlayer = function() {
   const audioContent = document.getElementById('audio-content');
   const toggleBtn = document.querySelector('.audio-toggle-btn');
-  
+
   if (audioContent && toggleBtn) {
     if (audioContent.style.display === 'none') {
       // Expandir
@@ -803,7 +808,7 @@ window.toggleAudioPlayer = function() {
 
 window.testAudioUrl = function(url) {
   console.log('🔍 Probando URL de audio directamente:', url);
-  
+
   // Crear ventana de prueba
   const testWindow = window.open('', '_blank', 'width=600,height=400');
   testWindow.document.write(`
@@ -824,44 +829,44 @@ window.testAudioUrl = function(url) {
         <h3>📊 Información de Debug:</h3>
         <div id="debug" style="background: #fff; padding: 10px; border-radius: 5px; font-size: 12px;"></div>
         <button onclick="window.close()" style="background: #f44336; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin-top: 20px; cursor: pointer;">Cerrar</button>
-        
+
         <script>
           const audio = document.querySelector('audio');
           const status = document.getElementById('status');
           const debug = document.getElementById('debug');
-          
+
           let debugInfo = [];
-          
+
           function addDebug(msg) {
             debugInfo.push(new Date().toLocaleTimeString() + ': ' + msg);
             debug.innerHTML = debugInfo.join('<br>');
           }
-          
+
           audio.addEventListener('loadstart', () => {
             status.textContent = '🔄 Iniciando carga...';
             addDebug('loadstart - Comenzando carga');
           });
-          
+
           audio.addEventListener('loadeddata', () => {
             status.textContent = '✅ Audio cargado correctamente';
             addDebug('loadeddata - Audio listo para reproducir');
           });
-          
+
           audio.addEventListener('error', (e) => {
             status.textContent = '❌ Error al cargar audio';
-            addDebug('ERROR: ' + (audio.error ? audio.error.code + ' - ' + audio.error.message : 'Error desconocido'));
+            addDebug('ERROR: '+ (audio.error ? audio.error.code + ' - ' + audio.error.message : 'Error desconocido'));
           });
-          
+
           audio.addEventListener('play', () => {
             status.textContent = '▶️ Reproduciendo...';
             addDebug('play - Reproducción iniciada');
           });
-          
+
           audio.addEventListener('ended', () => {
             status.textContent = '🏁 Reproducción completada';
             addDebug('ended - Audio terminado');
           });
-          
+
           addDebug('Iniciando prueba de URL de Google Drive');
         </script>
       </body>
@@ -915,14 +920,14 @@ if (chatForm) {
       });
       console.log('Estado de respuesta:', response.status);
       if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-      
+
       // Verificar el Content-Type de la respuesta
       const contentType = response.headers.get('Content-Type');
       console.log('🔍 Content-Type de respuesta:', contentType);
-      
+
       let data;
       let audioBinaryData = null;
-      
+
       if (contentType && contentType.includes('audio/')) {
         // Es un archivo de audio binario directo
         console.log('🎵 Respuesta es archivo de audio binario');
@@ -950,17 +955,17 @@ if (chatForm) {
       console.log('🔍 Respuesta RAW de N8N:', JSON.stringify(data, null, 2));
       console.log('🔍 Respuesta procesada (_out):', JSON.stringify(_out, null, 2));
       console.log('🔍 Campos disponibles en _out:', Object.keys(_out || {}));
-      
+
       // ---- Solo procesar URLs si NO es audio binario ----
       let audioUrl = null;
-      
+
       // Buscar URL de audio en diferentes campos
       const supportedAudioFields = ['data', 'audio', 'audioUrl', 'audio_url', 'audioData', 'sound', 'voice', 'audio_data', 'file', 'attachment', 'media'];
-      
+
       for (const field of supportedAudioFields) {
         if (_out && _out[field]) {
           console.log(`📊 Campo "${field}" encontrado:`, typeof _out[field], _out[field]);
-          
+
           // Verificar si es una URL de audio
           if (typeof _out[field] === 'string' && 
               (_out[field].startsWith('http') ||
@@ -971,7 +976,7 @@ if (chatForm) {
           }
         }
       }
-      
+
       if (audioUrl) {
         console.log('🎵 Reproduciendo audio desde URL...');
         playAudioReliable(audioUrl);
@@ -986,18 +991,23 @@ if (chatForm) {
         configContainer.innerHTML = '';
       }
 
-      // ---- Mostrar texto del agente (output o respuesta) ----
-      if (_out.output && typeof _out.output === "string") {
+      // ---- SIEMPRE mostrar texto del agente cuando esté disponible ----
+      let textoMostrado = false;
+
+      if (_out.output && typeof _out.output === "string" && _out.output.trim()) {
         appendMessage('Agente', _out.output);
         await saveMessageToDB('Agente', _out.output);
+        textoMostrado = true;
       }
-      if (_out.respuesta) {
+
+      if (_out.respuesta && typeof _out.respuesta === "string" && _out.respuesta.trim()) {
         appendMessage('Agente', _out.respuesta);
         await saveMessageToDB('Agente', _out.respuesta);
+        textoMostrado = true;
       }
-      
-      // ---- Solo mostrar error si NO hay texto de ningún tipo ----
-      if (!_out.respuesta && !_out.config_final && !_out.output) {
+
+      // Solo mostrar error si NO hay texto Y NO hay configuración
+      if (!textoMostrado && !_out.config_final) {
         appendMessage('Agente', 'No se recibió respuesta del agente. (Revisa el flujo de n8n)');
       }
     } catch (error) {
