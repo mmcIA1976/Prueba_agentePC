@@ -272,8 +272,23 @@ async function sendTranscribedMessage(message) {
     // ---- MANEJAR AUDIO BINARIO EN TRANSCRIPCIÓN ----
     if (audioBinaryData) {
       console.log('🎤 Procesando audio binario de transcripción:', audioBinaryData.byteLength, 'bytes');
+      
+      // Intentar extraer texto de headers HTTP
+      const textFromHeader = response.headers.get('x-response-text') || 
+                            response.headers.get('x-output-text') || 
+                            response.headers.get('x-agent-message');
+      
+      if (textFromHeader) {
+        console.log('📝 ✅ [Transcripción] Texto encontrado en header HTTP:', textFromHeader);
+        appendMessage('Agente', textFromHeader);
+        await saveMessageToDB('Agente', textFromHeader);
+      } else {
+        console.log('❌ [Transcripción] No se encontró texto en headers HTTP para audio binario');
+        console.log('📋 [Transcripción] Headers disponibles:', [...response.headers.entries()]);
+      }
+      
       playBinaryAudio(audioBinaryData);
-      return; // No procesar más, solo audio
+      return; // Audio procesado
     }
 
     // --- Compatibilidad con respuesta anidada tipo [{output: { ... }}] ---
@@ -956,8 +971,23 @@ if (chatForm) {
       // ---- MANEJAR AUDIO BINARIO DIRECTO ----
       if (audioBinaryData) {
         console.log('🎵 Procesando archivo de audio binario:', audioBinaryData.byteLength, 'bytes');
+        
+        // Intentar extraer texto de headers HTTP
+        const textFromHeader = response.headers.get('x-response-text') || 
+                              response.headers.get('x-output-text') || 
+                              response.headers.get('x-agent-message');
+        
+        if (textFromHeader) {
+          console.log('📝 ✅ Texto encontrado en header HTTP:', textFromHeader);
+          appendMessage('Agente', textFromHeader);
+          await saveMessageToDB('Agente', textFromHeader);
+        } else {
+          console.log('❌ No se encontró texto en headers HTTP para audio binario');
+          console.log('📋 Headers disponibles:', [...response.headers.entries()]);
+        }
+        
         playBinaryAudio(audioBinaryData);
-        return; // No procesar más, solo audio
+        return; // Audio procesado
       }
 
       // --- Compatibilidad con respuesta anidada tipo [{output: { ... }}] ---
