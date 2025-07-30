@@ -1,0 +1,684 @@
+{
+  "name": "Agente PC REPLIT",
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -540,
+        140
+      ],
+      "id": "54ca74d1-73dc-48d5-8017-ca6c2b9fa8e8",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "0vUSjgjHMgxzXlgh",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensaje }}",
+        "options": {
+          "systemMessage": "=Eres un técnico especialista en configuración de ordenadores de alto rendimiento. Tu función es asesorar al usuario, ¨dirijete siempre al usuario por su nombre: {{ $json.user_name }}¨paso a paso para elegir los mejores componentes posibles, garantizando compatibilidad total entre componentes, refrigeración adecuada, eficiencia energética y el máximo rendimiento. Actúas como el mejor asesor técnico de una tienda profesional de informática, capaz de responder a usuarios expertos y novatos con la misma claridad. Cuentas con la herramienta de Supabase vector store como fuente de información, úsala, llama a la herramienta para cualquier consulta informática.\n\nOBJETIVO:\nGuiar al usuario para construir o mejorar un PC completo y perfectamente compatible, para gaming, edición, IA, oficina, etc. SIEMPRE debes consultar antes de contestar la base de datos vectorizada para obtener información precisa y actualizada, prioriza siempre componentes actualizados.\n\nINSTRUCCIONES ESTRICTAS:\n\nCONSULTA SIEMPRE EL SUPABASE VECTOR STORE:\n\nCada vez que el usuario pregunte por un componente o tema técnico, consulta la sección correspondiente del documento vectorizado en la herramienta Supabase vector store. Usa este índice como guía dentro de Supabase vector store:\n\nCPU, núcleos, hilos, TDP, temperaturas → “1. CPU – Unidad Central de Procesamiento”\n\nGPU, DLSS, FSR, VRAM, FPS → “2. GPU – Tarjetas Gráficas”\n\nRAM, DDR4/DDR5, latencia, frecuencia → “3. Memoria RAM”\n\nPlaca base, chipset, socket, VRM → “4. Placas Base”\n\nSSD, NVMe, PCIe → “5. Almacenamiento”\n\nRefrigeración, AIO, flujo de aire → “6. Refrigeración”\n\nPSU, consumo, conectores, ATX 3.1 → “7. Fuentes de Alimentación (PSU)”\n\nCaja, tamaño, ventiladores → “8. Cajas y Factores de Forma”\n\nCompatibilidades entre componentes → “Compatibilidades Cruzadas y Recomendaciones”\n\nEquipos completos por presupuesto → “Configuraciones Recomendadas 2025”\n\nDefiniciones técnicas → “Glosario Técnico”\n\nSi no encuentras datos en el vector store, indícalo con transparencia:\n“No tengo datos específicos disponibles en mi base de datos actualizada, pero según mi entrenamiento hasta 2023…”\n\nDETECTA NECESIDADES DEL USUARIO:\n\nPregunta si el usuario tiene algo ya en mente como preferencia o sino es así, le tienes que asesorar con la información que te el usuario mediante algunas preguntas, por ejemplo:\n\n¿Para qué usarás el PC? (gaming, edición, IA, oficina…)\n\n¿Qué juegos o software planeas usar?\n\n¿A qué resolución y cuántos FPS quieres jugar?\n\n¿Usas VR? ¿Cuántos monitores?\n\n¿Qué conectividad necesitas? (HDMI 2.1, DisplayPort 2.0, Wi-Fi 6E, Bluetooth, USB-C…)\n\n¿Tienes algún componente ya?\n\n¿Estética preferida? (RGB, silencio, caja compacta…)\n\n¿Presupuesto total?\n\nMuy importante si el usuario no responde a todas las preguntas, después de insistir dos veces, si ya tienes el presupuesto pasa a la configuración del ordenador directamente, sino continua con las preguntas hasta que te de un presupuesto.\n\nVERIFICA COMPATIBILIDAD TÉCNICA:\n\nConfirma que:\n\nEl socket y chipset de la placa base sean compatibles con el procesador.\n\nLa RAM sea del tipo correcto (DDR4 o DDR5) y su frecuencia esté soportada.\n\nLa GPU entre físicamente en la caja y tenga soporte térmico.\n\nLa PSU tenga potencia y conectores suficientes.\n\nLas conexiones requeridas estén cubiertas (USB, HDMI, DP, Wi-Fi, BT…).\n\nEl sistema de refrigeración sea suficiente según el TDP del CPU y GPU.\n\nEl flujo de aire en la caja sea adecuado para el montaje propuesto.\n\nINCLUYE DATOS REALES Y TÉCNICOS:\n\nRespalda tus respuestas con información técnica real:\n\nFPS en juegos.\n\nTemperaturas bajo carga.\n\nConsumo energético estimado.\n\nComparativas entre componentes.\n\nTiempos de renderizado o carga cuando aplique.\n\nConsulta SIEMPRE el Supabase vector store. No inventes absolutamente nada.\n\nCONFIGURACIONES COMPLETAS:\n\nCuando el usuario tenga un presupuesto definido, ofrece SIEMPRE:\n\nDos configuraciones completas (AMD e Intel).\n\nPrecio estimado por componente.\n\nConfirmación de compatibilidades.\n\nDetalles de conectividad y refrigeración.\n\nAdvertencia si algún componente se acerca al límite del presupuesto indicado por el usuario.\n\nIMPORTANTE BUSCAR PRECIO DE LOS COMPONENTES DE LA CONFIGURACION SOLO:GPU,RAM,CPU y PLACA\n\n\nPrimer paso:\n\nSolo cuando tengas los datos suficientes para tu configuracion, busca el precio de los siguientes componentes seleccionados para la configuracion: cpu, gpu, ram y placa, llamando a la tool Buscador de precios.\n\nEjemplo de query para el Buscador de precios:\n  \n    \"query\": \"{\\\"cpu\\\":\\\"Intel i7-14700K\\\",\\\"gpu\\\":\\\"RX 9070 XT\\\",\\\"ram\\\":\\\"2x32 GB DDR5 6400 MHz\\\",\\\"placa\\\":\\\"Z790\\\n\nPara ello crearas un json solo con estos cuatro componentes seleccionados para la configuracion, en las categorias de exactamente cpu, gpu, ram y placa  como tienes en el ejemplo y se lo enviaras a tu herramienta: Buscador de precios,  esperando un output maximo de cuatro items o minimo los que encuentre.\n\nCuando tengas las propuestas de configuración, debes preparar un Json con estos cuatro componentes y enviárselo a tu herramienta Buscador de precios, tal que así:\n\n  \"cpu\": \"modelo de CPU elegido\",\n  \"gpu\": \"modelo de GPU elegido\",\n  \"placa\": \"modelo de placa base elegida\",\n  \"ram\": \"modelo de RAM elegida\"\n\nEjemplo:\n\nSi la configuración ideal que has escogido, contiene una CPU Intel Core i5-13400F, una GPU NVIDIA RTX 4070, una placa base MSI Pro B760M-A WiFi, y una RAM Corsair Vengeance DDR5 32GB, debes usar herramienta Buscador de precios,asi, enviando un JSON como:\n\n  \"cpu\": \"Intel Core i5-13400F\",\n  \"gpu\": \"NVIDIA RTX 4070\",\n  \"placa\": \"MSI Pro B760M-A WiFi\",\n  \"ram\": \"Corsair Vengeance DDR5 32GB\"\n\n\n\nEspera la respuesta de Buscador de precios, debe darte los precios y la urls de los componentes solicitados.\n\nSegundo paso: \n\nMUY IMPORTANTE SINO ENCUENTRA LA INFORMACION DE ALGUN COMPONENTE(cpu, gpu, placa o ram) EN Buscador de precios.\n\nSolo entonces, llama a la herramienta SerpAPI, busca el precio de ese componente del que falta la información en nuestra base de datos del Buscador de precios y obtén el precio y la url del componente a traves de la busqueda en internet.\n\nIMPORTANTE CONFIGURACION FINAL: antes de dar una configuración debes asegurarte de tener todos los precios y url de los componentes de GPU,RAM,CPU y PLACA\n\nSe añade en la configuración final los precios de esos componentes, y la url de enlace para cada uno de esos componentes obtenidos por nuestro Buscador de precios o por SerpAPI si se ha tenido que buscar fuera de nuestra base de datos.\n\n---\n\n**INSTRUCCIÓN SOBRE LA PRESENTACIÓN DE LA CONFIGURACIÓN FINAL:**\n\nCuando completes la recomendación, siempre debes indicar explícitamente en tu respuesta que se trata de la **“CONFIGURACIÓN FINAL”** y preséntala en un bloque separado, bien diferenciado del resto del mensaje.\n\nSi el usuario no ha indicado preferencia de marca o plataforma, debes presentar siempre **dos opciones de configuración final**:  \n- Una basada en procesador AMD  \n- Otra basada en procesador Intel  \ny deja claro que ambas son “configuración final recomendada”.\n\nUsa SIEMPRE la expresión **“CONFIGURACIÓN FINAL”** (en mayúsculas o en negrita) al encabezado del bloque de respuesta para que la aplicación pueda detectarla fácilmente.\n\nEjemplo de encabezado:\n\nCONFIGURACIÓN FINAL (Opción AMD):\n[contenido de la configuración…]\n\n\nCONFIGURACIÓN FINAL (Opción Intel):\n[contenido de la configuración…]\n\n\nSi el usuario ha pedido solo una plataforma específica, indícalo claramente también:\nCONFIGURACIÓN FINAL (Opción Intel solicitada por el usuario):\n[contenido de la configuración…]\n\n**Después de mostrar la configuración final, no olvides finalizar la conversación con las preguntas:**\n- “¿Cuál prefieres?”\n- “¿Quieres que explore opciones de monitor, teclado o VR?”\n- “¿Quieres que revise si se puede ajustar algo para ahorrar o mejorar?”\n\n---\n\n\nFINALIZA SIEMPRE ASÍ:\n¿Cuál prefieres?\n¿Quieres que explore opciones de monitor, teclado o VR?\n¿Quieres que revise si se puede ajustar algo para ahorrar o mejorar?\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        -260,
+        -80
+      ],
+      "id": "5fd7904e-7126-4179-bce4-1b6119f0ea20",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "configuradorprofesional",
+        "toolDescription": "Datos técnicos y componentes informáticos para configurar profesionalmente un PC o responder a cualquier duda técnica.",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        280
+      ],
+      "id": "0a6d56f2-6dad-464e-aabb-d3b28e781964",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "2UILWA3Ae4mGWf4R",
+          "name": "Supabase account agente configurador"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        100,
+        420
+      ],
+      "id": "3104eb99-b497-49e3-8964-3387de6ac3db",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "0vUSjgjHMgxzXlgh",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ $fromAI('Subject', ``, 'string') }}",
+        "emailType": "text",
+        "message": "={{ $fromAI('Message', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        -140,
+        300
+      ],
+      "id": "131a7efd-8696-43e0-abe4-15034ed96af8",
+      "name": "Gmail",
+      "webhookId": "7b4a0488-dfc7-4b4c-8392-22a1fc3f6e1b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qaXlpa9tD1U6PVRi",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Edit Fields').item.json['id chat replic'] }}",
+        "contextWindowLength": 7
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        -420,
+        280
+      ],
+      "id": "472fa390-323f-4261-a68a-eaf48842601c",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "hWBM0CuEx35z4zGm",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "llama para buscar los precios de los componentes seleccionados por el agente configurador para la configuración del PC",
+        "workflowId": {
+          "__rl": true,
+          "value": "mQ6fpjLEFo5QARYi",
+          "mode": "list",
+          "cachedResultName": "TEST MANUAL BUSCADOR"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        380
+      ],
+      "id": "52d7ba00-1104-485d-94cf-57e68cd151ba",
+      "name": "Buscador de precios"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
+      "typeVersion": 1,
+      "position": [
+        320,
+        340
+      ],
+      "id": "6186cc23-0101-49eb-85ab-257e2d216e9f",
+      "name": "SerpAPI",
+      "credentials": {
+        "serpApi": {
+          "id": "UuktMWteoPF7I7TY",
+          "name": "SerpAPI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "POST"
+        ],
+        "path": "bf351844-0718-4d84-bd9c-e5fbea35a83b",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -820,
+        -80
+      ],
+      "id": "dec98345-5637-4d48-b46f-cf3277268ea2",
+      "name": "Webhook",
+      "webhookId": "bf351844-0718-4d84-bd9c-e5fbea35a83b"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8837e7e2-8316-40ee-87e6-04d440cd6aa8",
+              "name": "mensaje",
+              "value": "={{ $json.body.mensaje }}",
+              "type": "string"
+            },
+            {
+              "id": "fe9ea34f-4c09-4516-8421-fcdec27da78a",
+              "name": "id chat replic",
+              "value": "={{ $json.body.chat_id }}",
+              "type": "string"
+            },
+            {
+              "id": "665dd67c-9bce-4ac1-9196-3076d245bdec",
+              "name": "user_name",
+              "value": "={{ $json.body.user_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -580,
+        -80
+      ],
+      "id": "27201b3a-9e0e-43d4-a14a-2939ad07c20e",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "respondWith": "binary",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "x-response-text",
+                "value": "={{ $('AI Agent').item.json.output }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1320,
+        -100
+      ],
+      "id": "35f9ec89-4c5c-46ac-aab1-1025186eacd5",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Recibe items como los que has mostrado\nconst raw = items[0].json.output;\n\n// 1. Normaliza la estructura y limpia los campos vacíos\nfunction cleanComponent(comp) {\n  return {\n    tipo: comp.tipo || '',\n    modelo: comp.modelo || '',\n    precio: comp.precio || '',\n    url: comp.url || ''\n  };\n}\n\nfunction cleanConfig(option) {\n  // Solo muestra opción si tiene al menos un componente\n  if (!Array.isArray(option.componentes) || !option.componentes.length) return null;\n  return {\n    nombre: option.nombre || '',\n    total: option.total || '',\n    componentes: option.componentes.map(cleanComponent)\n  };\n}\n\n// 2. Obtiene el array de configuraciones\nconst config_final = (raw.config_final || [])\n  .map(cleanConfig)\n  .filter(x => !!x); // Elimina nulos\n\n// 3. Prepara el output que espera el frontend\nreturn [{\n  json: {\n    output: raw.output || '',                   // El texto completo para chat\n    config_final,                               // Opciones limpias\n    isConfigFinal: raw.isConfigFinal === true   // Booleano (true si lo era)\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        -380
+      ],
+      "id": "3ec50b07-8eda-4f0a-833d-c88c39ad5b7c",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "71bfd1f2-7e0a-4978-b6c6-ab4ea8b8dabf",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "CONFIGURACIÓN FINAL",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        280,
+        -80
+      ],
+      "id": "a3cc64fb-54de-4134-b0d0-01b15798c5fc",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.output }}",
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"output\": { \"type\": \"string\" },\n    \"config_final\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"nombre\": { \"type\": \"string\" },\n          \"total\": { \"type\": \"string\" },\n          \"componentes\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"object\",\n              \"properties\": {\n                \"tipo\": { \"type\": \"string\" },\n                \"modelo\": { \"type\": \"string\" },\n                \"precio\": { \"type\": \"string\" },\n                \"url\": { \"type\": \"string\" }\n              },\n              \"required\": [\"tipo\", \"modelo\"]\n            }\n          }\n        },\n        \"required\": [\"nombre\", \"componentes\"]\n      }\n    },\n    \"isConfigFinal\": { \"const\": true }\n  },\n  \"required\": [\"output\", \"config_final\", \"isConfigFinal\"]\n}\n",
+        "options": {
+          "systemPromptTemplate": "Necesito que del texto output me organices la información de la siguiente manera, por un lado va el texto de la conversación y por otro lado las configuraciones organizadas así: config_final y una o las dos configuraciones, dependiendo la elección del usuario en la conversación, primero la de Intel y luego la de AMD, cada configuración con sus componentes ordenados por categorías, cpu, ram, tarjeta grafica etc... deben tener cada componente su precio y su url y mostrar el precio final"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        540,
+        -380
+      ],
+      "id": "c7d50c8e-d1aa-4230-84d3-fdf8fd5c316d",
+      "name": "Information Extractor"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        -200
+      ],
+      "id": "14427708-fb60-4e91-b643-e42fb776b3db",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "0vUSjgjHMgxzXlgh",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/gD1IexrzCvsXPHUuT0s3",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "=text",
+              "value": "={{ $('AI Agent').item.json.output }}"
+            },
+            {
+              "name": "model_id",
+              "value": "eleven_turbo_v2_5"
+            },
+            {
+              "name": "language_code",
+              "value": "es"
+            },
+            {
+              "name": "speed",
+              "value": "1.6"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        60
+      ],
+      "id": "36a772b8-7431-458e-8918-c3b693053ce0",
+      "name": "Generar Voces",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "JDbBHZZpHm1KKBh5",
+          "name": "Credencial eleven labs videos virales"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "dialogo_configurador_voz",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1_b8yO8OD5v3vsGO_jMQYHErRrcP4cN7T",
+          "mode": "list",
+          "cachedResultName": "configurador PC dialogos",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1_b8yO8OD5v3vsGO_jMQYHErRrcP4cN7T"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2240,
+        260
+      ],
+      "id": "e1a956de-17de-43e5-be22-46f60e912ecb",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ARBkZZmMcHhcPywt",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Este nodo toma los datos de los nodos anteriores y asegura siempre una sola entrada con output y data\n\n// Si vienes de dos ramas (una de texto y otra de audio), tendrás dos items, hay que combinarlos.\nlet texto = '';\nlet data = null;\n\nfor (const item of items) {\n  if (item.json.output) texto = item.json.output;\n  if (item.json.data !== undefined) data = item.json.data;\n}\n\n// Si solo viene texto:\nif (!texto && items[0]?.json?.output) texto = items[0].json.output;\n// Si solo viene audio:\nif (!data && items[0]?.json?.data !== undefined) data = items[0].json.data;\n\nreturn [\n  {\n    json: {\n      output: texto,\n      data: data || null // siempre existe aunque sea null\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2240,
+        100
+      ],
+      "id": "73e3502a-57db-45d1-9698-7d0e96533ce8",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4f6cf5d9-d43f-4c3b-a39f-ad48965a1d00",
+              "name": "output_conversacion",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2240,
+        -60
+      ],
+      "id": "e42cc30a-9937-4bfa-ad34-241fee8a62e8",
+      "name": "Edit Fields1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscador de precios": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SerpAPI": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generar Voces",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar Voces": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        []
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Madrid",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "6db815a2-42cd-4c47-ad9c-f2852e2296ba",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "71ca9ef9ab74c86c7c7dc7db7de39a412b041300bc09619ac3016c2be66753a6"
+  },
+  "id": "Aaws1CRkFxdNeqd7",
+  "tags": [
+    {
+      "createdAt": "2025-05-13T12:39:32.568Z",
+      "updatedAt": "2025-05-13T12:39:32.568Z",
+      "id": "8KUYDIiyQY9RseT4",
+      "name": "agente configurador PC"
+    }
+  ]
+}
