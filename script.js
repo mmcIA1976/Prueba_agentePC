@@ -249,20 +249,42 @@ async function sendTranscribedMessage(message) {
     });
 
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-    const data = await response.json();
+    
+    // Verificar Content-Type para transcripción también
+    const contentType = response.headers.get('Content-Type');
+    console.log('🎤 Content-Type de respuesta transcrita:', contentType);
+    
+    let data;
+    let audioBinaryData = null;
+    
+    if (contentType && contentType.includes('audio/')) {
+      // Es audio binario para transcripción
+      console.log('🎵 Respuesta de transcripción es audio binario');
+      audioBinaryData = await response.arrayBuffer();
+      data = { audio_binary: true, mensaje: 'Audio transcrito recibido como binario' };
+    } else {
+      // Es JSON normal
+      data = await response.json();
+    }
 
     hideLoadingSpinner();
+
+    // ---- MANEJAR AUDIO BINARIO EN TRANSCRIPCIÓN ----
+    if (audioBinaryData) {
+      console.log('🎤 Procesando audio binario de transcripción:', audioBinaryData.byteLength, 'bytes');
+      playBinaryAudio(audioBinaryData);
+      appendMessage('Agente', '🎵 Respuesta de voz enviada como audio directo');
+      await saveMessageToDB('Agente', '🎵 Respuesta de voz enviada como audio directo');
+      return; // No procesar más, solo audio
+    }
 
     // --- Compatibilidad con respuesta anidada tipo [{output: { ... }}] ---
     const _out = Array.isArray(data) && data.length && data[0] ? data[0] : data;
 
     // ---- DEBUGGING: Analizar respuesta para mensaje transcrito ----
     console.log('🎤 Respuesta para mensaje transcrito:', JSON.stringify(data, null, 2));
-
-    // ---- DEBUGGING: Verificar respuesta transcrita para audio ----
-    console.log('🔍 Analizando respuesta transcrita para audio:', JSON.stringify(_out, null, 2));
     
-    // ---- Reproducir audio si viene en la respuesta (URLs de Google Drive) ----
+    // ---- Solo buscar URLs si NO es audio binario ----
     let audioUrl = null;
     
     // Buscar URL de audio en diferentes campos
@@ -272,11 +294,9 @@ async function sendTranscribedMessage(message) {
       if (_out && _out[field]) {
         console.log(`📊 Campo "${field}" encontrado en transcripción:`, typeof _out[field], _out[field]);
         
-        // Verificar si es una URL de Google Drive o cualquier URL de audio
+        // Verificar si es una URL de audio
         if (typeof _out[field] === 'string' && 
-            (_out[field].includes('drive.google.com') || 
-             _out[field].includes('googleusercontent.com') ||
-             _out[field].startsWith('http') ||
+            (_out[field].startsWith('http') ||
              _out[field].startsWith('data:audio/'))) {
           audioUrl = _out[field];
           console.log(`🔊 URL de audio encontrada en transcripción, campo "${field}":`, audioUrl);
@@ -286,10 +306,10 @@ async function sendTranscribedMessage(message) {
     }
     
     if (audioUrl) {
-      console.log('🎵 Reproduciendo audio transcrito...');
+      console.log('🎵 Reproduciendo audio transcrito desde URL...');
       playAudioReliable(audioUrl);
     } else {
-      console.log('❌ No se encontró audio válido en respuesta transcrita');
+      console.log('ℹ️ No se encontró audio en respuesta transcrita');
     }
 
     if (_out && _out.isConfigFinal === true && _out.config_final) {
@@ -612,7 +632,121 @@ window.tryDirectPlay = function(audioId, url) {
 };
 
 // Función para probar la URL directamente
-// Función para descargar audio
+// Función para reproducir audio binario directo
+function playBinaryAudio(audioArrayBuffer) {
+  try {
+    console.log('🎵 Reproduciendo audio binario directo:', audioArrayBuffer.byteLength, 'bytes');
+    
+    // Crear Blob del audio
+    const audioBlob = new Blob([audioArrayBuffer], { type: 'audio/mpeg' });
+    const audioUrl = URL.createObjectURL(audioBlob);
+    
+    console.log('✅ Blob de audio creado:', audioUrl);
+    
+    // Crear elemento de audio dinámico
+    const audioId = 'binary_audio_' + Date.now();
+    const audioContainer = document.createElement('div');
+    audioContainer.className = 'audio-response-container';
+    
+    audioContainer.innerHTML = `
+      <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 20px; border-radius: 15px; margin: 15px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+          <span style="font-size: 1.5em;">🎵</span>
+          <strong style="font-size: 1.1em;">Audio Directo de N8N</strong>
+        </div>
+        <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; margin: 10px 0;">
+          <audio id="audio-${audioId}" controls style="width: 100%; margin: 10px 0;" preload="auto">
+            <source src="${audioUrl}" type="audio/mpeg">
+            Tu navegador no soporta este audio.
+          </audio>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: 15px 0;">
+          <button onclick="document.getElementById('audio-${audioId}').play()" style="background: #28a745; color: white; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; flex: 1; min-width: 140px;">
+            ▶️ Reproducir
+          </button>
+          <button onclick="downloadBinaryAudio('${audioUrl}')" style="background: #007bff; color: white; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; flex: 1; min-width: 140px;">
+            📥 Descargar MP3
+          </button>
+        </div>
+        <div id="status-${audioId}" style="font-size: 14px; color: #b8f5cd; margin: 10px 0;">✅ Audio cargado directamente</div>
+      </div>
+    `;
+
+    // Agregar al chat
+    chatLog.appendChild(audioContainer);
+    chatLog.scrollTop = chatLog.scrollHeight;
+
+    // Configurar elemento de audio
+    const audioElement = document.getElementById(`audio-${audioId}`);
+    const statusElement = document.getElementById(`status-${audioId}`);
+    
+    if (audioElement && statusElement) {
+      // Event listeners para feedback
+      audioElement.addEventListener('loadeddata', () => {
+        console.log('✅ Audio binario cargado y listo');
+        statusElement.textContent = '✅ Audio listo para reproducir';
+        
+        // Intentar reproducción automática
+        setTimeout(() => {
+          const playPromise = audioElement.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log('🎵 ¡Audio binario reproduciéndose automáticamente!');
+                statusElement.textContent = '🎵 ¡Reproduciendo automáticamente!';
+              })
+              .catch(error => {
+                console.log('⚠️ Autoplay bloqueado:', error.message);
+                statusElement.textContent = '⚠️ Haz clic en ▶️ para reproducir';
+              });
+          }
+        }, 500);
+      });
+
+      audioElement.addEventListener('play', () => {
+        console.log('▶️ Audio binario reproduciéndose');
+        statusElement.textContent = '▶️ Reproduciendo audio...';
+      });
+
+      audioElement.addEventListener('ended', () => {
+        console.log('🏁 Audio binario terminado');
+        statusElement.textContent = '🏁 Reproducción completada ✅';
+      });
+
+      audioElement.addEventListener('error', (e) => {
+        console.error('❌ Error en audio binario:', audioElement.error);
+        statusElement.textContent = '❌ Error al reproducir audio';
+        statusElement.style.color = '#ffcccb';
+      });
+    }
+
+    // Liberar URL después de un tiempo para ahorrar memoria
+    setTimeout(() => {
+      URL.revokeObjectURL(audioUrl);
+      console.log('🧹 URL de audio liberada de memoria');
+    }, 600000); // 10 minutos
+
+  } catch (error) {
+    console.error('❌ Error procesando audio binario:', error);
+    appendMessage('Sistema', `❌ Error al procesar audio: ${error.message}`);
+  }
+}
+
+// Función para descargar audio binario
+window.downloadBinaryAudio = function(blobUrl) {
+  console.log('📥 Descargando audio binario:', blobUrl);
+  
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = `audio_respuesta_${Date.now()}.mp3`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  
+  console.log('✅ Descarga de audio binario iniciada');
+};
+
+// Función para descargar audio desde URL
 window.downloadAudio = function(url) {
   console.log('📥 Iniciando descarga de audio:', url);
   
@@ -742,9 +876,35 @@ if (chatForm) {
       });
       console.log('Estado de respuesta:', response.status);
       if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-      const data = await response.json();
+      
+      // Verificar el Content-Type de la respuesta
+      const contentType = response.headers.get('Content-Type');
+      console.log('🔍 Content-Type de respuesta:', contentType);
+      
+      let data;
+      let audioBinaryData = null;
+      
+      if (contentType && contentType.includes('audio/')) {
+        // Es un archivo de audio binario directo
+        console.log('🎵 Respuesta es archivo de audio binario');
+        audioBinaryData = await response.arrayBuffer();
+        data = { audio_binary: true, mensaje: 'Audio recibido como archivo binario' };
+      } else {
+        // Es JSON normal
+        console.log('📄 Respuesta es JSON');
+        data = await response.json();
+      }
       console.log('Respuesta de N8N:', data);
       hideLoadingSpinner();
+
+      // ---- MANEJAR AUDIO BINARIO DIRECTO ----
+      if (audioBinaryData) {
+        console.log('🎵 Procesando archivo de audio binario:', audioBinaryData.byteLength, 'bytes');
+        playBinaryAudio(audioBinaryData);
+        appendMessage('Agente', '🎵 Respuesta enviada como audio directo');
+        await saveMessageToDB('Agente', '🎵 Respuesta enviada como audio directo');
+        return; // No procesar más, solo audio
+      }
 
       // --- Compatibilidad con respuesta anidada tipo [{output: { ... }}] ---
       const _out = Array.isArray(data) && data.length && data[0] ? data[0] : data;
@@ -754,16 +914,7 @@ if (chatForm) {
       console.log('🔍 Respuesta procesada (_out):', JSON.stringify(_out, null, 2));
       console.log('🔍 Campos disponibles en _out:', Object.keys(_out || {}));
       
-      // Verificar TODOS los posibles campos de audio
-      const audioFields = ['data', 'audio', 'audioData', 'sound', 'voice', 'audio_data', 'audioUrl', 'audio_url', 'file', 'attachment', 'media'];
-      audioFields.forEach(field => {
-        if (_out && _out[field]) {
-          console.log(`📊 Campo "${field}" encontrado:`, typeof _out[field], 
-            typeof _out[field] === 'string' ? _out[field].substring(0, 100) + '...' : _out[field]);
-        }
-      });
-      
-      // ---- Reproducir audio si viene en la respuesta (URLs de Google Drive) ----
+      // ---- Solo procesar URLs si NO es audio binario ----
       let audioUrl = null;
       
       // Buscar URL de audio en diferentes campos
@@ -773,11 +924,9 @@ if (chatForm) {
         if (_out && _out[field]) {
           console.log(`📊 Campo "${field}" encontrado:`, typeof _out[field], _out[field]);
           
-          // Verificar si es una URL de Google Drive o cualquier URL de audio
+          // Verificar si es una URL de audio
           if (typeof _out[field] === 'string' && 
-              (_out[field].includes('drive.google.com') || 
-               _out[field].includes('googleusercontent.com') ||
-               _out[field].startsWith('http') ||
+              (_out[field].startsWith('http') ||
                _out[field].startsWith('data:audio/'))) {
             audioUrl = _out[field];
             console.log(`🔊 URL de audio encontrada en campo "${field}":`, audioUrl);
@@ -787,10 +936,10 @@ if (chatForm) {
       }
       
       if (audioUrl) {
-        console.log('🎵 Reproduciendo audio desde datos...');
+        console.log('🎵 Reproduciendo audio desde URL...');
         playAudioReliable(audioUrl);
       } else {
-        console.log('❌ No se encontró audio válido en la respuesta');
+        console.log('ℹ️ No se encontró URL de audio en respuesta JSON');
       }
 
       // ---- Mostrar configuración final solo si corresponde ----
