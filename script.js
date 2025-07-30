@@ -272,12 +272,12 @@ async function sendTranscribedMessage(message) {
     // ---- MANEJAR AUDIO BINARIO EN TRANSCRIPCIÓN ----
     if (audioBinaryData) {
       console.log('🎤 Procesando audio binario de transcripción:', audioBinaryData.byteLength, 'bytes');
-      
+
       // Intentar extraer texto de headers HTTP
       const textFromHeader = response.headers.get('x-response-text') || 
                             response.headers.get('x-output-text') || 
                             response.headers.get('x-agent-message');
-      
+
       if (textFromHeader) {
         console.log('📝 ✅ [Transcripción] Texto encontrado en header HTTP:', textFromHeader);
         appendMessage('Agente', textFromHeader);
@@ -285,8 +285,22 @@ async function sendTranscribedMessage(message) {
       } else {
         console.log('❌ [Transcripción] No se encontró texto en headers HTTP para audio binario');
         console.log('📋 [Transcripción] Headers disponibles:', [...response.headers.entries()]);
+
+        // Debugging adicional: mostrar TODOS los headers uno por uno
+        console.log('🔍 DEBUGGING DETALLADO DE HEADERS:');
+        for (const [key, value] of response.headers.entries()) {
+          console.log(`   📋 Header: "${key}" = "${value}"`);
+        }
+
+        // Verificar headers específicos que esperamos
+        const headerNames = ['x-response-text', 'x-output-text', 'x-agent-message', 'X-Response-Text', 'X-Output-Text', 'X-Agent-Message'];
+        console.log('🔍 Verificando headers esperados:');
+        headerNames.forEach(headerName => {
+          const value = response.headers.get(headerName);
+          console.log(`   🔍 "${headerName}": ${value ? `"${value}"` : 'NO ENCONTRADO'}`);
+        });
       }
-      
+
       playBinaryAudio(audioBinaryData);
       return; // Audio procesado
     }
@@ -971,12 +985,12 @@ if (chatForm) {
       // ---- MANEJAR AUDIO BINARIO DIRECTO ----
       if (audioBinaryData) {
         console.log('🎵 Procesando archivo de audio binario:', audioBinaryData.byteLength, 'bytes');
-        
+
         // Intentar extraer texto de headers HTTP
         const textFromHeader = response.headers.get('x-response-text') || 
                               response.headers.get('x-output-text') || 
                               response.headers.get('x-agent-message');
-        
+
         if (textFromHeader) {
           console.log('📝 ✅ Texto encontrado en header HTTP:', textFromHeader);
           appendMessage('Agente', textFromHeader);
@@ -984,8 +998,22 @@ if (chatForm) {
         } else {
           console.log('❌ No se encontró texto en headers HTTP para audio binario');
           console.log('📋 Headers disponibles:', [...response.headers.entries()]);
+
+        // Debugging adicional: mostrar TODOS los headers uno por uno
+        console.log('🔍 DEBUGGING DETALLADO DE HEADERS:');
+        for (const [key, value] of response.headers.entries()) {
+          console.log(`   📋 Header: "${key}" = "${value}"`);
         }
-        
+
+        // Verificar headers específicos que esperamos
+        const headerNames = ['x-response-text', 'x-output-text', 'x-agent-message', 'X-Response-Text', 'X-Output-Text', 'X-Agent-Message'];
+        console.log('🔍 Verificando headers esperados:');
+        headerNames.forEach(headerName => {
+          const value = response.headers.get(headerName);
+          console.log(`   🔍 "${headerName}": ${value ? `"${value}"` : 'NO ENCONTRADO'}`);
+        });
+      }
+
         playBinaryAudio(audioBinaryData);
         return; // Audio procesado
       }
