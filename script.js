@@ -65,6 +65,10 @@ manualLoginForm.addEventListener('submit', async (e) => {
   currentUser = { id: email, name: name, email: email, profileImage: '' };
   chatId = generateChatId();
 
+  // Guardar en localStorage
+  localStorage.setItem('currentUser', JSON.stringify(currentUser));
+  localStorage.setItem('chatId', chatId);
+
   await initializeUser(currentUser);
   showMainApp();
   updateUserUI();
@@ -94,7 +98,31 @@ function updateUserUI() {
 function logout() {
   currentUser = null;
   chatId = null;
+  localStorage.removeItem('currentUser');
+  localStorage.removeItem('chatId');
   showLoginScreen();
+}
+
+// Verificar si hay sesión guardada
+function checkExistingSession() {
+  const savedUser = localStorage.getItem('currentUser');
+  const savedChatId = localStorage.getItem('chatId');
+  
+  if (savedUser && savedChatId) {
+    try {
+      currentUser = JSON.parse(savedUser);
+      chatId = savedChatId;
+      console.log('✅ Sesión restaurada:', currentUser.name);
+      showMainApp();
+      updateUserUI();
+      return true;
+    } catch (error) {
+      console.error('❌ Error al restaurar sesión:', error);
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('chatId');
+    }
+  }
+  return false;
 }
 
 // --- BASE DE DATOS ---
@@ -502,7 +530,13 @@ window.toggleAudioPlayer = function() {
 
 // --- INICIALIZACIÓN ---
 document.addEventListener('DOMContentLoaded', () => {
-  showLoginScreen();
+  // Verificar si hay sesión activa primero
+  const hasSession = checkExistingSession();
+  
+  // Solo mostrar login si no hay sesión
+  if (!hasSession) {
+    showLoginScreen();
+  }
 
   // Event listeners
   const micButton = document.getElementById('mic-button');
