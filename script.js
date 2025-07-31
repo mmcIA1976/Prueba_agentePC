@@ -4,8 +4,6 @@ let chatId = null;
 let recognition = null;
 let isRecording = false;
 let loadingSpinnerElement = null;
-let isProcessingMessage = false; // Prevenir múltiples envíos
-let lastMessageTimestamp = 0; // Prevenir mensajes duplicados rápidos
 
 const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
@@ -109,7 +107,7 @@ function logout() {
 function checkExistingSession() {
   const savedUser = localStorage.getItem('currentUser');
   const savedChatId = localStorage.getItem('chatId');
-
+  
   if (savedUser && savedChatId) {
     try {
       currentUser = JSON.parse(savedUser);
@@ -151,17 +149,7 @@ async function saveMessageToDB(author, content) {
 }
 
 // --- RECONOCIMIENTO DE VOZ ---
-let voiceTimeout = null;
-let currentTranscript = '';
-let hasSpokenRecently = false;
-
 function initializeVoiceRecognition() {
-  // Verificar si ya existe reconocimiento
-  if (recognition) {
-    console.log('⚠️ Reconocimiento ya existe, saliendo...');
-    return;
-  }
-
   console.log('🎤 Inicializando reconocimiento de voz...');
 
   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -175,112 +163,46 @@ function initializeVoiceRecognition() {
     recognition.onstart = () => {
       console.log('🎤 Reconocimiento de voz iniciado');
       isRecording = true;
-      currentTranscript = '';
-      hasSpokenRecently = false;
       updateMicButton();
-      // NO mostrar mensaje en el chat para evitar spam
+      appendMessage('Sistema', '🎤 Escuchando... Habla ahora');
     };
 
     recognition.onresult = (event) => {
-      let interimTranscript = '';
       let finalTranscript = '';
-
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
           finalTranscript += transcript;
-        } else {
-          interimTranscript += transcript;
         }
       }
 
-      // Si hay transcripción (final o interim), resetear timeout
-      if (finalTranscript.trim() || interimTranscript.trim()) {
-        hasSpokenRecently = true;
-
-        // Limpiar timeout anterior
-        if (voiceTimeout) {
-          clearTimeout(voiceTimeout);
-          voiceTimeout = null;
-        }
-
-        // Actualizar transcript actual
-        if (finalTranscript.trim()) {
-          currentTranscript += finalTranscript;
-        }
-
-        console.log('🎤 Detectando voz...', interimTranscript || finalTranscript);
-
-        // Establecer nuevo timeout de 3 segundos de silencio
-        voiceTimeout = setTimeout(() => {
-          if (currentTranscript.trim() && !isProcessingMessage) {
-            console.log('⏰ 3 segundos de silencio - enviando mensaje:', currentTranscript);
-
-            // Transcribir al chatbox
-            chatInput.value = currentTranscript.trim();
-            
-            // FORZAR visualización del mensaje del usuario
-            console.log('📝 Mostrando mensaje del usuario en chat:', currentTranscript.trim());
-            appendMessage('Tú', currentTranscript.trim());
-            saveMessageToDB('Tú', currentTranscript.trim());
-
-            // Enviar al agente automáticamente
-            sendMessage(currentTranscript.trim());
-
-            // Resetear todo
-            currentTranscript = '';
-            hasSpokenRecently = false;
-            chatInput.value = '';
-
-            // Detener reconocimiento
-            if (recognition && isRecording) {
-              recognition.stop();
-            }
-          }
-        }, 3000); // 3 segundos de silencio
+      if (finalTranscript.trim()) {
+        console.log('📝 Transcripción final:', finalTranscript);
+        appendMessage('Tú', finalTranscript.trim());
+        saveMessageToDB('Tú', finalTranscript.trim());
+        sendMessage(finalTranscript.trim());
       }
     };
 
     recognition.onerror = (event) => {
       console.error('❌ Error en reconocimiento de voz:', event.error);
-
-      // Limpiar timeout si hay error
-      if (voiceTimeout) {
-        clearTimeout(voiceTimeout);
-        voiceTimeout = null;
-      }
-
       isRecording = false;
-      currentTranscript = '';
-      hasSpokenRecently = false;
       updateMicButton();
 
-      // Solo mostrar error si no es por falta de habla
-      if (event.error !== 'no-speech') {
-        let errorMsg = 'Error en el reconocimiento de voz';
-        switch(event.error) {
-          case 'audio-capture': errorMsg = 'No se pudo acceder al micrófono.'; break;
-          case 'not-allowed': errorMsg = 'Permisos de micrófono denegados.'; break;
-          case 'aborted': errorMsg = 'Reconocimiento cancelado.'; break;
-        }
-        appendMessage('Sistema', `❌ ${errorMsg}`);
+      let errorMsg = 'Error en el reconocimiento de voz';
+      switch(event.error) {
+        case 'no-speech': errorMsg = 'No se detectó voz. Intenta hablar más claro.'; break;
+        case 'audio-capture': errorMsg = 'No se pudo acceder al micrófono.'; break;
+        case 'not-allowed': errorMsg = 'Permisos de micrófono denegados.'; break;
       }
+      appendMessage('Sistema', `❌ ${errorMsg}`);
     };
 
     recognition.onend = () => {
       console.log('⏹️ Reconocimiento de voz terminado');
-
-      // Limpiar timeout
-      if (voiceTimeout) {
-        clearTimeout(voiceTimeout);
-        voiceTimeout = null;
-      }
-
       isRecording = false;
-      currentTranscript = '';
-      hasSpokenRecently = false;
       updateMicButton();
-      // NO mostrar mensaje en el chat
+      appendMessage('Sistema', '⏹️ Reconocimiento de voz detenido');
     };
 
     console.log('✅ Reconocimiento de voz configurado correctamente');
@@ -314,14 +236,14 @@ function updateMicButton() {
   if (!micButton) return;
 
   if (isRecording) {
-    micButton.textContent = '🎤';
+    micButton.textContent = '⏹️';
     micButton.classList.add('recording');
-    micButton.title = 'Escuchando... (3 seg de silencio para enviar)';
+    micButton.title = 'Detener conversación';
     micButton.style.backgroundColor = '#ff4757';
   } else {
     micButton.textContent = '🎤';
     micButton.classList.remove('recording');
-    micButton.title = 'Hablar';
+    micButton.title = 'Iniciar conversación';
     micButton.style.backgroundColor = '#2ed573';
   }
 }
@@ -333,18 +255,17 @@ function toggleRecording() {
     return;
   }
 
-  // SOLO INICIAR - ignorar si ya está grabando
-  if (isRecording) {
-    console.log('🎤 Ya está escuchando...');
-    return;
-  }
-
-  console.log('🎤 Iniciando reconocimiento de voz...');
-  try {
-    recognition.start();
-  } catch (error) {
-    console.error('Error al iniciar reconocimiento:', error);
-    appendMessage('Sistema', '❌ No se pudo iniciar el reconocimiento de voz');
+  if (!isRecording) {
+    console.log('🎤 Iniciando reconocimiento de voz...');
+    try {
+      recognition.start();
+    } catch (error) {
+      console.error('Error al iniciar reconocimiento:', error);
+      appendMessage('Sistema', '❌ No se pudo iniciar el reconocimiento de voz');
+    }
+  } else {
+    console.log('⏹️ Deteniendo reconocimiento de voz...');
+    recognition.stop();
   }
 }
 
@@ -352,24 +273,6 @@ function toggleRecording() {
 async function sendMessage(message) {
   if (!message.trim()) return;
 
-  // Prevenir múltiples ejecuciones simultaneas
-  if (isProcessingMessage) {
-    console.log('⚠️ Ya hay un mensaje siendo procesado, ignorando...');
-    return;
-  }
-
-  // Prevenir mensajes duplicados muy rápidos (debounce de 2 segundos)
-  const now = Date.now();
-  if (now - lastMessageTimestamp < 2000) {
-    console.log('⚠️ Mensaje muy rápido, aplicando debounce...');
-    return;
-  }
-
-  const timestamp = new Date().toISOString();
-  console.log(`🚀 [${timestamp}] Iniciando envío mensaje:`, message);
-
-  isProcessingMessage = true;
-  lastMessageTimestamp = now;
   showLoadingSpinner();
 
   try {
@@ -462,9 +365,6 @@ async function sendMessage(message) {
   } catch (error) {
     hideLoadingSpinner();
     appendMessage('Agente', `Error de conexión: ${error.message}`);
-  } finally {
-    isProcessingMessage = false; // Liberar bloqueo SIEMPRE
-    console.log('✅ Bloqueo de mensaje liberado');
   }
 }
 
@@ -549,13 +449,6 @@ function playBinaryAudio(audioArrayBuffer) {
 
 // --- UI HELPERS ---
 function appendMessage(author, text) {
-  console.log(`💬 appendMessage llamada: ${author} - ${text.substring(0, 50)}...`);
-  
-  if (!chatLog) {
-    console.error('❌ chatLog no existe!');
-    return;
-  }
-  
   const div = document.createElement('div');
   const avatarImg = author === 'Tú' 
     ? '<img class="avatar" src="https://api.dicebear.com/7.x/personas/svg?seed=user" alt="User">'
@@ -564,8 +457,6 @@ function appendMessage(author, text) {
   div.className = `chat-message ${author === 'Tú' ? 'user' : 'agent'}`;
   div.innerHTML = `${avatarImg}<div>${text}</div>`;
   chatLog.appendChild(div);
-  
-  console.log(`✅ Mensaje agregado al DOM. Total mensajes: ${chatLog.children.length}`);
 
   if (author === 'Agente' && text.length > 250) {
     div.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -585,26 +476,12 @@ function showLoadingSpinner() {
   chatLog.appendChild(div);
   chatLog.scrollTop = chatLog.scrollHeight;
   loadingSpinnerElement = div;
-
-  // Deshabilitar botón de envío
-  const submitBtn = chatForm.querySelector('button[type="submit"]');
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Enviando...';
-  }
 }
 
 function hideLoadingSpinner() {
   if (loadingSpinnerElement) {
     chatLog.removeChild(loadingSpinnerElement);
     loadingSpinnerElement = null;
-  }
-
-  // Rehabilitar botón de envío
-  const submitBtn = chatForm.querySelector('button[type="submit"]');
-  if (submitBtn) {
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Enviar';
   }
 }
 
@@ -747,63 +624,39 @@ window.toggleAudioPlayer = function() {
 };
 
 // --- INICIALIZACIÓN ---
-// PROTECCIÓN ROBUSTA usando DOM como fuente de verdad
-function initializeAppOnce() {
-  // Verificar si ya está inicializado usando el DOM
-  const bodyElement = document.body;
-  if (bodyElement.hasAttribute('data-app-initialized')) {
-    console.log('⚠️ App ya inicializada (DOM), saliendo...');
-    return;
-  }
-
-  // Marcar como inicializado INMEDIATAMENTE en el DOM
-  bodyElement.setAttribute('data-app-initialized', 'true');
-  console.log('🚀 ÚNICA inicialización - DOM marcado');
-
-  // Verificar sesión
+document.addEventListener('DOMContentLoaded', () => {
+  // Verificar si hay sesión activa primero
   const hasSession = checkExistingSession();
+  
+  // Solo mostrar login si no hay sesión
   if (!hasSession) {
     showLoginScreen();
   }
 
-  // Event listeners con protección anti-duplicados
+  // Event listeners
   const micButton = document.getElementById('mic-button');
-  if (micButton && !micButton.hasAttribute('data-initialized')) {
-    micButton.setAttribute('data-initialized', 'true');
+  if (micButton) {
     micButton.addEventListener('click', toggleRecording);
     updateMicButton();
-    console.log('✅ Botón micrófono inicializado');
   }
 
-  if (chatForm && !chatForm.hasAttribute('data-initialized')) {
-    chatForm.setAttribute('data-initialized', 'true');
+  if (chatForm) {
     chatForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const message = chatInput.value.trim();
-      if (!message || isProcessingMessage) return;
+      if (!message) return;
 
       appendMessage('Tú', message);
       await saveMessageToDB('Tú', message);
       chatInput.value = '';
+
       await sendMessage(message);
     });
-    console.log('✅ Formulario chat inicializado');
   }
 
-  // Inicializar voz usando verificación DOM
-  const voiceContainer = document.body;
-  if (!voiceContainer.hasAttribute('data-voice-initialized')) {
-    voiceContainer.setAttribute('data-voice-initialized', 'true');
+  // Inicializar reconocimiento de voz
+  setTimeout(() => {
+    console.log('🚀 Iniciando reconocimiento de voz...');
     initializeVoiceRecognition();
-    console.log('✅ Reconocimiento voz inicializado');
-  } else {
-    console.log('⚠️ Voz ya inicializada (DOM), omitiendo...');
-  }
-}
-
-// Ejecutar cuando DOM esté listo
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeAppOnce, { once: true });
-} else {
-  initializeAppOnce();
-}
+  }, 1000);
+});
