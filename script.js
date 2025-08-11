@@ -448,70 +448,9 @@ function playBinaryAudio(audioArrayBuffer) {
 
     const audioBlob = new Blob([audioArrayBuffer], { type: 'audio/mpeg' });
     const audioUrl = URL.createObjectURL(audioBlob);
-    const audioContainer = document.getElementById('audio-container');
-
-    if (audioContainer) {
-      const audioId = 'binary_audio_' + Date.now();
-
-      audioContainer.innerHTML = `
-        <div class="external-audio-player binary-audio">
-          <div class="audio-header">
-            <div class="audio-title">
-              <span style="font-size: 1.5em;">🎵</span>
-              <strong>Audio de Respuesta</strong>
-            </div>
-            <button onclick="toggleAudioPlayer()" class="audio-toggle-btn">➖ Minimizar</button>
-          </div>
-          <div class="audio-content" id="audio-content">
-            <div class="audio-player-wrapper">
-              <audio id="audio-${audioId}" controls preload="auto">
-                <source src="${audioUrl}" type="audio/mpeg">
-              </audio>
-            </div>
-            <div class="audio-controls">
-              <button onclick="document.getElementById('audio-${audioId}').play()" class="audio-btn play-btn">▶️ Reproducir</button>
-              <button onclick="downloadBinaryAudio('${audioUrl}')" class="audio-btn download-btn">📥 Descargar</button>
-            </div>
-            <div id="status-${audioId}" class="audio-status">✅ Audio cargado</div>
-          </div>
-        </div>
-      `;
-
-      audioContainer.style.display = 'block';
-
-      const audioElement = document.getElementById(`audio-${audioId}`);
-      const statusElement = document.getElementById(`status-${audioId}`);
-
-      if (audioElement && statusElement) {
-        audioElement.addEventListener('loadeddata', () => {
-          console.log('✅ Audio cargado y listo');
-          statusElement.textContent = '✅ Audio listo';
-
-          setTimeout(() => {
-            const playPromise = audioElement.play();
-            if (playPromise !== undefined) {
-              playPromise
-                .then(() => {
-                  console.log('🎵 Audio reproduciéndose automáticamente');
-                  statusElement.textContent = '🎵 Reproduciendo...';
-                })
-                .catch(() => {
-                  statusElement.textContent = '⚠️ Haz clic en ▶️ para reproducir';
-                });
-            }
-          }, 500);
-        });
-
-        audioElement.addEventListener('ended', () => {
-          statusElement.textContent = '🏁 Reproducción completada';
-        });
-
-        audioElement.addEventListener('error', () => {
-          statusElement.textContent = '❌ Error al reproducir';
-        });
-      }
-    }
-
+    
+    appendMinimalAudioMessage(audioUrl, 'Audio de Respuesta', true);
+    
     setTimeout(() => URL.revokeObjectURL(audioUrl), 600000);
 
   } catch (error) {
@@ -537,6 +476,108 @@ function appendMessage(author, text) {
     chatLog.scrollTop = chatLog.scrollHeight;
   }
 }
+
+// --- REPRODUCTOR MINIMALISTA ---
+function appendMinimalAudioMessage(audioUrl, title = 'Audio', isBinary = false) {
+  const audioId = 'mini_audio_' + Date.now();
+  const div = document.createElement('div');
+  
+  div.className = 'chat-message agent audio-message';
+  div.innerHTML = `
+    <img class="avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=robot" alt="IA">
+    <div class="minimal-audio-player">
+      <div class="audio-info">
+        <span class="audio-icon">🎵</span>
+        <span class="audio-title">${title}</span>
+      </div>
+      <div class="audio-controls-mini">
+        <button class="play-pause-btn" onclick="toggleAudioPlayback('${audioId}')" id="btn-${audioId}">
+          ▶️
+        </button>
+        <div class="audio-progress">
+          <div class="progress-bar" id="progress-${audioId}"></div>
+        </div>
+        <span class="audio-time" id="time-${audioId}">0:00</span>
+      </div>
+      <audio id="${audioId}" preload="auto" style="display: none;">
+        <source src="${audioUrl}" type="audio/mpeg">
+      </audio>
+    </div>
+  `;
+  
+  chatLog.appendChild(div);
+  chatLog.scrollTop = chatLog.scrollHeight;
+  
+  setupMiniAudioPlayer(audioId);
+}
+
+function setupMiniAudioPlayer(audioId) {
+  const audioElement = document.getElementById(audioId);
+  const playBtn = document.getElementById(`btn-${audioId}`);
+  const progressBar = document.getElementById(`progress-${audioId}`);
+  const timeDisplay = document.getElementById(`time-${audioId}`);
+  
+  if (!audioElement || !playBtn || !progressBar || !timeDisplay) return;
+  
+  // Auto-reproducir cuando esté listo
+  audioElement.addEventListener('loadeddata', () => {
+    console.log('✅ Audio minimalista cargado y listo');
+    setTimeout(() => {
+      const playPromise = audioElement.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log('🎵 Audio reproduciéndose automáticamente');
+            playBtn.textContent = '⏸️';
+          })
+          .catch(() => {
+            console.log('⚠️ Autoplay bloqueado');
+          });
+      }
+    }, 500);
+  });
+  
+  // Actualizar progreso
+  audioElement.addEventListener('timeupdate', () => {
+    if (audioElement.duration) {
+      const progress = (audioElement.currentTime / audioElement.duration) * 100;
+      progressBar.style.width = progress + '%';
+      
+      const minutes = Math.floor(audioElement.currentTime / 60);
+      const seconds = Math.floor(audioElement.currentTime % 60);
+      timeDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+  });
+  
+  // Cuando termine
+  audioElement.addEventListener('ended', () => {
+    playBtn.textContent = '▶️';
+    progressBar.style.width = '0%';
+    timeDisplay.textContent = '0:00';
+  });
+  
+  // Error
+  audioElement.addEventListener('error', () => {
+    playBtn.textContent = '❌';
+    timeDisplay.textContent = 'Error';
+  });
+}
+
+// Función global para controlar reproducción
+window.toggleAudioPlayback = function(audioId) {
+  const audioElement = document.getElementById(audioId);
+  const playBtn = document.getElementById(`btn-${audioId}`);
+  
+  if (!audioElement || !playBtn) return;
+  
+  if (audioElement.paused) {
+    audioElement.play();
+    playBtn.textContent = '⏸️';
+  } else {
+    audioElement.pause();
+    playBtn.textContent = '▶️';
+  }
+};
 
 function showLoadingSpinner() {
   const div = document.createElement('div');
@@ -592,74 +633,7 @@ function playConfiguracionFinalAudio() {
   
   try {
     console.log('🎵 Reproduciendo audio fijo de configuración final');
-
-    const audioContainer = document.getElementById('audio-container');
-
-    if (audioContainer) {
-      const audioId = 'config_final_audio_' + Date.now();
-
-      audioContainer.innerHTML = `
-        <div class="external-audio-player supabase-audio">
-          <div class="audio-header">
-            <div class="audio-title">
-              <span style="font-size: 1.5em;">🎯</span>
-              <strong>Configuración Final - Audio</strong>
-            </div>
-            <button onclick="toggleAudioPlayer()" class="audio-toggle-btn">➖ Minimizar</button>
-          </div>
-          <div class="audio-content" id="audio-content">
-            <div class="audio-player-wrapper">
-              <audio id="audio-${audioId}" controls preload="auto">
-                <source src="${CONFIGURACION_FINAL_AUDIO_URL}" type="audio/mpeg">
-              </audio>
-            </div>
-            <div class="audio-controls">
-              <button onclick="document.getElementById('audio-${audioId}').play()" class="audio-btn play-btn">▶️ Reproducir</button>
-              <button onclick="downloadSupabaseAudio('${CONFIGURACION_FINAL_AUDIO_URL}')" class="audio-btn download-btn">📥 Descargar</button>
-            </div>
-            <div id="status-${audioId}" class="audio-status">🎯 Audio de configuración final cargado</div>
-          </div>
-        </div>
-      `;
-
-      audioContainer.style.display = 'block';
-
-      const audioElement = document.getElementById(`audio-${audioId}`);
-      const statusElement = document.getElementById(`status-${audioId}`);
-
-      if (audioElement && statusElement) {
-        audioElement.addEventListener('loadeddata', () => {
-          console.log('✅ Audio de configuración final cargado y listo');
-          statusElement.textContent = '🎯 Audio de configuración final listo';
-
-          // Reproducir automáticamente después de un pequeño delay
-          setTimeout(() => {
-            const playPromise = audioElement.play();
-            if (playPromise !== undefined) {
-              playPromise
-                .then(() => {
-                  console.log('🎵 Audio de configuración final reproduciéndose automáticamente');
-                  statusElement.textContent = '🎵 Reproduciendo configuración final...';
-                })
-                .catch(() => {
-                  console.log('⚠️ Autoplay bloqueado, usuario debe hacer click');
-                  statusElement.textContent = '⚠️ Haz clic en ▶️ para escuchar';
-                });
-            }
-          }, 800);
-        });
-
-        audioElement.addEventListener('ended', () => {
-          statusElement.textContent = '🏁 Configuración final completada';
-        });
-
-        audioElement.addEventListener('error', (e) => {
-          console.error('❌ Error cargando audio de configuración final:', e);
-          statusElement.textContent = '❌ Error al cargar audio';
-        });
-      }
-    }
-
+    appendMinimalAudioMessage(CONFIGURACION_FINAL_AUDIO_URL, 'Configuración Final - Audio');
   } catch (error) {
     console.error('❌ Error procesando audio de configuración final:', error);
     appendMessage('Sistema', `❌ Error al procesar audio: ${error.message}`);
@@ -670,72 +644,7 @@ function playConfiguracionFinalAudio() {
 function playSupabaseAudio(audioUrl) {
   try {
     console.log('🎵 Reproduciendo audio desde Supabase:', audioUrl);
-
-    const audioContainer = document.getElementById('audio-container');
-
-    if (audioContainer) {
-      const audioId = 'supabase_audio_' + Date.now();
-
-      audioContainer.innerHTML = `
-        <div class="external-audio-player supabase-audio">
-          <div class="audio-header">
-            <div class="audio-title">
-              <span style="font-size: 1.5em;">🎵</span>
-              <strong>Audio del Agente</strong>
-            </div>
-            <button onclick="toggleAudioPlayer()" class="audio-toggle-btn">➖ Minimizar</button>
-          </div>
-          <div class="audio-content" id="audio-content">
-            <div class="audio-player-wrapper">
-              <audio id="audio-${audioId}" controls preload="auto">
-                <source src="${audioUrl}" type="audio/mpeg">
-              </audio>
-            </div>
-            <div class="audio-controls">
-              <button onclick="document.getElementById('audio-${audioId}').play()" class="audio-btn play-btn">▶️ Reproducir</button>
-              <button onclick="downloadSupabaseAudio('${audioUrl}')" class="audio-btn download-btn">📥 Descargar</button>
-            </div>
-            <div id="status-${audioId}" class="audio-status">✅ Audio cargado desde Supabase</div>
-          </div>
-        </div>
-      `;
-
-      audioContainer.style.display = 'block';
-
-      const audioElement = document.getElementById(`audio-${audioId}`);
-      const statusElement = document.getElementById(`status-${audioId}`);
-
-      if (audioElement && statusElement) {
-        audioElement.addEventListener('loadeddata', () => {
-          console.log('✅ Audio de Supabase cargado y listo');
-          statusElement.textContent = '✅ Audio listo';
-
-          setTimeout(() => {
-            const playPromise = audioElement.play();
-            if (playPromise !== undefined) {
-              playPromise
-                .then(() => {
-                  console.log('🎵 Audio de Supabase reproduciéndose automáticamente');
-                  statusElement.textContent = '🎵 Reproduciendo...';
-                })
-                .catch(() => {
-                  statusElement.textContent = '⚠️ Haz clic en ▶️ para reproducir';
-                });
-            }
-          }, 500);
-        });
-
-        audioElement.addEventListener('ended', () => {
-          statusElement.textContent = '🏁 Reproducción completada';
-        });
-
-        audioElement.addEventListener('error', (e) => {
-          console.error('❌ Error cargando audio de Supabase:', e);
-          statusElement.textContent = '❌ Error al cargar audio';
-        });
-      }
-    }
-
+    appendMinimalAudioMessage(audioUrl, 'Audio del Agente');
   } catch (error) {
     console.error('❌ Error procesando audio de Supabase:', error);
     appendMessage('Sistema', `❌ Error al procesar audio: ${error.message}`);
