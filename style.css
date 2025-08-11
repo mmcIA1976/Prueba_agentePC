@@ -642,6 +642,87 @@ footer {
   border: 1.7px solid #81c8f8;
 }
 
+/* ---- REPRODUCTOR DE AUDIO MINIMALISTA ---- */
+.audio-message {
+  max-width: 80% !important;
+}
+
+.minimal-audio-player {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.audio-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: #24304a;
+  font-weight: 500;
+}
+
+.audio-icon {
+  font-size: 1.1rem;
+}
+
+.audio-controls-mini {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(46, 103, 248, 0.05);
+  padding: 6px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(46, 103, 248, 0.1);
+}
+
+.play-pause-btn {
+  background: #2e67f8;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.play-pause-btn:hover {
+  background: #1e57e8;
+  transform: scale(1.1);
+}
+
+.audio-progress {
+  flex: 1;
+  height: 4px;
+  background: rgba(46, 103, 248, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #2e67f8, #60b6fa);
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.1s ease;
+}
+
+.audio-time {
+  font-size: 0.75rem;
+  color: #697189;
+  font-weight: 500;
+  min-width: 35px;
+  text-align: right;
+}
+
 /* ---- RESPONSIVE ---- */
 @media (max-width: 900px) {
   .header-content { flex-direction: column; gap: 10px; }
