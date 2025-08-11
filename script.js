@@ -405,6 +405,10 @@ async function sendMessage(message) {
     if (_out && _out.config_final && Array.isArray(_out.config_final) && _out.config_final.length > 0) {
       console.log('✅ Renderizando configuración final:', _out.config_final);
       renderConfiguracion(_out.config_final);
+      
+      // Reproducir audio fijo de configuración final
+      console.log('🎵 Reproduciendo audio específico para configuración final...');
+      playConfiguracionFinalAudio();
     } else {
       configContainer.innerHTML = '';
     }
@@ -579,6 +583,87 @@ function renderConfiguracion(config_final) {
     html += '</ul></div>';
     configContainer.innerHTML += html;
   });
+}
+
+// --- AUDIO FIJO CONFIGURACIÓN FINAL ---
+function playConfiguracionFinalAudio() {
+  // URL fija del audio de configuración final
+  const CONFIGURACION_FINAL_AUDIO_URL = "https://icobjdsqjjkumxsrlflf.supabase.co/storage/v1/object/public/conversacionesagente/2025-08-11T15:57:06.296+02:00.mp3";
+  
+  try {
+    console.log('🎵 Reproduciendo audio fijo de configuración final');
+
+    const audioContainer = document.getElementById('audio-container');
+
+    if (audioContainer) {
+      const audioId = 'config_final_audio_' + Date.now();
+
+      audioContainer.innerHTML = `
+        <div class="external-audio-player supabase-audio">
+          <div class="audio-header">
+            <div class="audio-title">
+              <span style="font-size: 1.5em;">🎯</span>
+              <strong>Configuración Final - Audio</strong>
+            </div>
+            <button onclick="toggleAudioPlayer()" class="audio-toggle-btn">➖ Minimizar</button>
+          </div>
+          <div class="audio-content" id="audio-content">
+            <div class="audio-player-wrapper">
+              <audio id="audio-${audioId}" controls preload="auto">
+                <source src="${CONFIGURACION_FINAL_AUDIO_URL}" type="audio/mpeg">
+              </audio>
+            </div>
+            <div class="audio-controls">
+              <button onclick="document.getElementById('audio-${audioId}').play()" class="audio-btn play-btn">▶️ Reproducir</button>
+              <button onclick="downloadSupabaseAudio('${CONFIGURACION_FINAL_AUDIO_URL}')" class="audio-btn download-btn">📥 Descargar</button>
+            </div>
+            <div id="status-${audioId}" class="audio-status">🎯 Audio de configuración final cargado</div>
+          </div>
+        </div>
+      `;
+
+      audioContainer.style.display = 'block';
+
+      const audioElement = document.getElementById(`audio-${audioId}`);
+      const statusElement = document.getElementById(`status-${audioId}`);
+
+      if (audioElement && statusElement) {
+        audioElement.addEventListener('loadeddata', () => {
+          console.log('✅ Audio de configuración final cargado y listo');
+          statusElement.textContent = '🎯 Audio de configuración final listo';
+
+          // Reproducir automáticamente después de un pequeño delay
+          setTimeout(() => {
+            const playPromise = audioElement.play();
+            if (playPromise !== undefined) {
+              playPromise
+                .then(() => {
+                  console.log('🎵 Audio de configuración final reproduciéndose automáticamente');
+                  statusElement.textContent = '🎵 Reproduciendo configuración final...';
+                })
+                .catch(() => {
+                  console.log('⚠️ Autoplay bloqueado, usuario debe hacer click');
+                  statusElement.textContent = '⚠️ Haz clic en ▶️ para escuchar';
+                });
+            }
+          }, 800);
+        });
+
+        audioElement.addEventListener('ended', () => {
+          statusElement.textContent = '🏁 Configuración final completada';
+        });
+
+        audioElement.addEventListener('error', (e) => {
+          console.error('❌ Error cargando audio de configuración final:', e);
+          statusElement.textContent = '❌ Error al cargar audio';
+        });
+      }
+    }
+
+  } catch (error) {
+    console.error('❌ Error procesando audio de configuración final:', error);
+    appendMessage('Sistema', `❌ Error al procesar audio: ${error.message}`);
+  }
 }
 
 // --- AUDIO DESDE SUPABASE ---
