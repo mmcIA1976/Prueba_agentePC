@@ -4,6 +4,8 @@ let chatId = null;
 let recognition = null;
 let isRecording = false;
 let loadingSpinnerElement = null;
+let lastMicClickTime = 0;
+let micButtonDebouncing = false;
 
 const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
@@ -107,7 +109,7 @@ function logout() {
 function checkExistingSession() {
   const savedUser = localStorage.getItem('currentUser');
   const savedChatId = localStorage.getItem('chatId');
-  
+
   if (savedUser && savedChatId) {
     try {
       currentUser = JSON.parse(savedUser);
@@ -156,10 +158,12 @@ function initializeVoiceRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRecognition();
 
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'es-ES';
+    recognition.continuous = true; // Mantener la escucha activa
+    recognition.interimResults = true; // Permitir resultados intermedios
+    recognition.lang = 'es-ES'; // Idioma español
+    recognition.maxAlternatives = 1; // Solo una alternativa
 
+    // Configurar la sensibilidad al silencio
     recognition.onstart = () => {
       console.log('🎤 Reconocimiento de voz iniciado');
       isRecording = true;
@@ -168,11 +172,17 @@ function initializeVoiceRecognition() {
     };
 
     recognition.onresult = (event) => {
+      let interimTranscript = '';
       let finalTranscript = '';
+
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
+        const result = event.results[i];
+        const transcript = result[0].transcript;
+
+        if (result.isFinal) {
           finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
         }
       }
 
@@ -181,6 +191,9 @@ function initializeVoiceRecognition() {
         appendMessage('Tú', finalTranscript.trim());
         saveMessageToDB('Tú', finalTranscript.trim());
         sendMessage(finalTranscript.trim());
+      } else if (interimTranscript.trim()) {
+        // Opcional: mostrar transcripción intermedia si se desea
+        // console.log('📝 Transcripción intermedia:', interimTranscript);
       }
     };
 
@@ -191,18 +204,37 @@ function initializeVoiceRecognition() {
 
       let errorMsg = 'Error en el reconocimiento de voz';
       switch(event.error) {
-        case 'no-speech': errorMsg = 'No se detectó voz. Intenta hablar más claro.'; break;
-        case 'audio-capture': errorMsg = 'No se pudo acceder al micrófono.'; break;
-        case 'not-allowed': errorMsg = 'Permisos de micrófono denegados.'; break;
+        case 'no-speech':
+          errorMsg = 'No se detectó voz. Intenta hablar más claro o más cerca del micrófono.';
+          appendMessage('Sistema', `❌ ${errorMsg}`);
+          break;
+        case 'audio-capture':
+          errorMsg = 'No se pudo acceder al micrófono. Verifica que esté conectado y no esté en uso por otra aplicación.';
+          appendMessage('Sistema', `❌ ${errorMsg}`);
+          break;
+        case 'not-allowed':
+          errorMsg = 'Permisos de micrófono denegados. Por favor, habilita el acceso al micrófono en la configuración de tu navegador.';
+          appendMessage('Sistema', `❌ ${errorMsg}`);
+          break;
+        case 'language-not-supported':
+          errorMsg = 'El idioma configurado no es compatible. Se usará un idioma predeterminado.';
+          appendMessage('Sistema', `❌ ${errorMsg}`);
+          break;
+        default:
+          errorMsg = `Error desconocido: ${event.error}`;
+          appendMessage('Sistema', `❌ ${errorMsg}`);
+          break;
       }
-      appendMessage('Sistema', `❌ ${errorMsg}`);
     };
 
     recognition.onend = () => {
       console.log('⏹️ Reconocimiento de voz terminado');
       isRecording = false;
       updateMicButton();
-      appendMessage('Sistema', '⏹️ Reconocimiento de voz detenido');
+      // Solo mostrar este mensaje si no se detuvo por falta de voz
+      if (!event || event.error !== 'no-speech') {
+         appendMessage('Sistema', '⏹️ Reconocimiento de voz detenido');
+      }
     };
 
     console.log('✅ Reconocimiento de voz configurado correctamente');
@@ -239,16 +271,49 @@ function updateMicButton() {
     micButton.textContent = '⏹️';
     micButton.classList.add('recording');
     micButton.title = 'Detener conversación';
-    micButton.style.backgroundColor = '#ff4757';
+    micButton.style.backgroundColor = '#ff4757'; // Rojo
   } else {
     micButton.textContent = '🎤';
     micButton.classList.remove('recording');
     micButton.title = 'Iniciar conversación';
-    micButton.style.backgroundColor = '#2ed573';
+    micButton.style.backgroundColor = '#2ed573'; // Verde
   }
 }
 
 function toggleRecording() {
+  // Protección anti-spam: debouncing robusto
+  const now = Date.now();
+  const DEBOUNCE_TIME = 500; // Reducido a 500ms para mejor experiencia
+
+  if (micButtonDebouncing) {
+    console.log('⚠️ Botón micrófono en debounce, ignorando click');
+    return;
+  }
+
+  if (now - lastMicClickTime < DEBOUNCE_TIME) {
+    console.log('⚠️ Click muy rápido en micrófono, ignorando');
+    return;
+  }
+
+  lastMicClickTime = now;
+  micButtonDebouncing = true;
+
+  // Deshabilitar botón temporalmente
+  const micButton = document.getElementById('mic-button');
+  if (micButton) {
+    micButton.disabled = true;
+    micButton.style.opacity = '0.7';
+  }
+
+  // Reactivar después del debounce
+  setTimeout(() => {
+    micButtonDebouncing = false;
+    if (micButton) {
+      micButton.disabled = false;
+      micButton.style.opacity = '1';
+    }
+  }, DEBOUNCE_TIME);
+
   if (!recognition) {
     console.log('❌ Reconocimiento de voz no disponible');
     appendMessage('Sistema', '❌ Función de voz no disponible en este navegador');
@@ -256,15 +321,19 @@ function toggleRecording() {
   }
 
   if (!isRecording) {
-    console.log('🎤 Iniciando reconocimiento de voz...');
+    console.log('🎤 Iniciando grabación con auto-stop...');
     try {
+      // Configuración para auto-stop por silencio
+      recognition.continuous = false; // Detenerse después de la primera frase final o silencio
+      recognition.interimResults = false; // No necesitamos resultados intermedios para auto-stop
+
       recognition.start();
     } catch (error) {
       console.error('Error al iniciar reconocimiento:', error);
       appendMessage('Sistema', '❌ No se pudo iniciar el reconocimiento de voz');
     }
   } else {
-    console.log('⏹️ Deteniendo reconocimiento de voz...');
+    console.log('⏹️ Deteniendo grabación manualmente...');
     recognition.stop();
   }
 }
@@ -311,8 +380,8 @@ async function sendMessage(message) {
     if (audioBinaryData) {
       console.log('🎵 Procesando audio binario:', audioBinaryData.byteLength, 'bytes');
 
-      const textFromHeader = response.headers.get('x-response-text') || 
-                            response.headers.get('x-output-text') || 
+      const textFromHeader = response.headers.get('x-response-text') ||
+                            response.headers.get('x-output-text') ||
                             response.headers.get('x-agent-message');
 
       if (textFromHeader) {
@@ -356,7 +425,7 @@ async function sendMessage(message) {
       playSupabaseAudio(_out.audio_url);
     }
 
-    if (!textoMostrado && !_out.config_final && !_out.audio_url) {
+    if (!textoMostrado && (!_out.config_final || (_out.config_final && Array.isArray(_out.config_final) && _out.config_final.length === 0)) && !_out.audio_url) {
       console.log('❌ No se encontró contenido válido en respuesta');
       console.log('🔍 Campos disponibles:', Object.keys(_out || {}));
       appendMessage('Agente', 'No se recibió respuesta del agente.');
@@ -450,7 +519,7 @@ function playBinaryAudio(audioArrayBuffer) {
 // --- UI HELPERS ---
 function appendMessage(author, text) {
   const div = document.createElement('div');
-  const avatarImg = author === 'Tú' 
+  const avatarImg = author === 'Tú'
     ? '<img class="avatar" src="https://api.dicebear.com/7.x/personas/svg?seed=user" alt="User">'
     : '<img class="avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=robot" alt="IA">';
 
@@ -627,7 +696,7 @@ window.toggleAudioPlayer = function() {
 document.addEventListener('DOMContentLoaded', () => {
   // Verificar si hay sesión activa primero
   const hasSession = checkExistingSession();
-  
+
   // Solo mostrar login si no hay sesión
   if (!hasSession) {
     showLoginScreen();
