@@ -7,6 +7,12 @@ let loadingSpinnerElement = null;
 let lastMicClickTime = 0;
 let micButtonDebouncing = false;
 
+// Sistema de audio de "pensando"
+let thinkingTimeouts = [];
+let thinkingStartTime = null;
+const THINKING_AUDIO_URL = "https://icobjdsqjjkumxsrlflf.supabase.co/storage/v1/object/public/conversacionesagente/ElevenLabs_2025-08-11T17_13_57_Sara%20Martin%203_pvc_sp113_s50_sb50_se12_b_m2.mp3";
+const THINKING_INTERVALS = [15000, 40000, 80000]; // 15s, 40s, 1m20s
+
 const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
 const chatLog = document.getElementById('chat-log');
@@ -590,12 +596,79 @@ function showLoadingSpinner() {
   chatLog.appendChild(div);
   chatLog.scrollTop = chatLog.scrollHeight;
   loadingSpinnerElement = div;
+  
+  // Iniciar sistema de audio de pensando
+  startThinkingAudioSystem();
+}
+
+// --- SISTEMA DE AUDIO DE PENSANDO ---
+function startThinkingAudioSystem() {
+  console.log('🧠 Iniciando sistema de audio de pensando...');
+  thinkingStartTime = Date.now();
+  clearThinkingTimeouts();
+  
+  // Programar audios en intervalos: 15s, 40s, 1m20s
+  THINKING_INTERVALS.forEach((interval, index) => {
+    const timeout = setTimeout(() => {
+      console.log(`🧠 Reproduciendo audio de pensando (intervalo ${index + 1}: ${interval/1000}s)`);
+      playThinkingAudio(index + 1);
+    }, interval);
+    
+    thinkingTimeouts.push(timeout);
+  });
+}
+
+function clearThinkingTimeouts() {
+  thinkingTimeouts.forEach(timeout => clearTimeout(timeout));
+  thinkingTimeouts = [];
+}
+
+function playThinkingAudio(iteration) {
+  try {
+    console.log(`🧠 Reproduciendo audio de pensando (${iteration})`);
+    
+    // Mostrar mensaje contextual según la iteración
+    let message = '';
+    switch(iteration) {
+      case 1:
+        message = 'El agente está procesando la información... En unos minutos tendrás tu configuración';
+        break;
+      case 2:
+        message = 'Analizando componentes y precios actualizados... Un poco más de paciencia';
+        break;
+      case 3:
+        message = 'Últimos ajustes para optimizar tu configuración... Ya casi está listo';
+        break;
+      default:
+        message = 'El agente sigue trabajando en tu configuración perfecta...';
+    }
+    
+    appendMessage('Sistema', `🧠 ${message}`);
+    appendMinimalAudioMessage(THINKING_AUDIO_URL, `Audio de Pensando ${iteration}`);
+    
+  } catch (error) {
+    console.error('❌ Error reproduciendo audio de pensando:', error);
+  }
 }
 
 function hideLoadingSpinner() {
   if (loadingSpinnerElement) {
     chatLog.removeChild(loadingSpinnerElement);
     loadingSpinnerElement = null;
+  }
+  
+  // Detener sistema de audio de pensando
+  stopThinkingAudioSystem();
+}
+
+function stopThinkingAudioSystem() {
+  console.log('🧠 Deteniendo sistema de audio de pensando');
+  clearThinkingTimeouts();
+  
+  if (thinkingStartTime) {
+    const thinkingDuration = (Date.now() - thinkingStartTime) / 1000;
+    console.log(`🧠 El agente estuvo pensando ${thinkingDuration.toFixed(1)} segundos`);
+    thinkingStartTime = null;
   }
 }
 
