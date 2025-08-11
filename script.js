@@ -11,7 +11,8 @@ let micButtonDebouncing = false;
 let thinkingTimeouts = [];
 let thinkingStartTime = null;
 const THINKING_AUDIO_URL = "https://icobjdsqjjkumxsrlflf.supabase.co/storage/v1/object/public/conversacionesagente/ElevenLabs_2025-08-11T17_13_57_Sara%20Martin%203_pvc_sp113_s50_sb50_se12_b_m2.mp3";
-const THINKING_INTERVALS = [15000, 40000, 80000]; // 15s, 40s, 1m20s
+const THINKING_AUDIO_URL_2 = "https://icobjdsqjjkumxsrlflf.supabase.co/storage/v1/object/public/conversacionesagente/ElevenLabs_2025-08-11T17_58_59_Sara%20Martin.mp3";
+const THINKING_INTERVALS = [15000, 40000, 80000, 110000]; // 15s, 40s, 1m20s, 1m50s
 
 const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
@@ -629,6 +630,8 @@ function playThinkingAudio(iteration) {
     
     // Mostrar mensaje contextual según la iteración
     let message = '';
+    let audioUrl = THINKING_AUDIO_URL; // Por defecto usar el primer audio
+    
     switch(iteration) {
       case 1:
         message = 'El agente está procesando la información... En unos minutos tendrás tu configuración';
@@ -639,12 +642,16 @@ function playThinkingAudio(iteration) {
       case 3:
         message = 'Últimos ajustes para optimizar tu configuración... Ya casi está listo';
         break;
+      case 4:
+        message = 'Finalizando los últimos detalles de tu configuración ideal... Solo unos segundos más';
+        audioUrl = THINKING_AUDIO_URL_2; // Usar el segundo audio para el 4to intervalo
+        break;
       default:
         message = 'El agente sigue trabajando en tu configuración perfecta...';
     }
     
     appendMessage('Sistema', `🧠 ${message}`);
-    appendMinimalAudioMessage(THINKING_AUDIO_URL, `Audio de Pensando ${iteration}`);
+    appendMinimalAudioMessage(audioUrl, `Audio de Pensando ${iteration}`);
     
   } catch (error) {
     console.error('❌ Error reproduciendo audio de pensando:', error);
