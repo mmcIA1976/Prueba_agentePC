@@ -48,8 +48,9 @@ header {
   flex: 1;
   color: #f7cf67;
   text-shadow: 0 2px 6px #232b4750;
-  margin-left: 60px;
-  margin-right: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .user-info {
