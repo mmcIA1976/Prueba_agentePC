@@ -107,6 +107,25 @@ header {
   }
 }
 
+/* Animación moderna para móvil */
+@keyframes modernTitleGlow {
+  0% {
+    background: linear-gradient(135deg, #f7cf67 0%, #ffd700 50%, #f7cf67 100%);
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 10px rgba(247, 207, 103, 0.5));
+    transform: scale(1);
+  }
+  50% {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #f7cf67 100%);
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4)) drop-shadow(0 0 20px rgba(247, 207, 103, 0.8));
+    transform: scale(1.02);
+  }
+  100% {
+    background: linear-gradient(135deg, #f7cf67 0%, #ffd700 50%, #f7cf67 100%);
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 10px rgba(247, 207, 103, 0.5));
+    transform: scale(1);
+  }
+}
+
 .user-info {
   position: absolute;
   right: 20px;
@@ -845,14 +864,28 @@ footer {
 }
 
 @media (max-width: 600px) {
-  /* Header mejorado para móvil */
+  /* Header moderno y elegante para móvil */
+  header {
+    background: linear-gradient(135deg, #1a1f35 0%, #2a3351 50%, #21253a 100%);
+    padding: 20px 0 15px 0;
+    box-shadow: 
+      0 4px 20px rgba(0,0,0,0.3),
+      0 1px 0 rgba(255,255,255,0.1) inset;
+  }
+  
   .header-content { 
     height: auto;
-    min-height: 80px;
-    padding: 12px;
+    min-height: 85px;
+    padding: 16px 20px;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
     justify-content: flex-start;
+    background: rgba(255,255,255,0.03);
+    border-radius: 20px;
+    margin: 0 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
   }
   
   /* Primera fila: Logo izquierda + Usuario derecha */
@@ -864,12 +897,24 @@ footer {
   }
   
   .header-logo { 
-    width: 50px; 
-    height: 50px;
+    width: 55px; 
+    height: 55px;
     position: relative;
     left: 0;
     top: 0;
     order: 0;
+    border-radius: 16px;
+    box-shadow: 
+      0 6px 20px rgba(0,0,0,0.2),
+      0 0 0 3px rgba(247, 207, 103, 0.3);
+    transition: all 0.3s ease;
+  }
+  
+  .header-logo:hover {
+    transform: scale(1.05);
+    box-shadow: 
+      0 8px 25px rgba(0,0,0,0.3),
+      0 0 0 3px rgba(247, 207, 103, 0.5);
   }
   
   .user-info { 
@@ -878,14 +923,19 @@ footer {
     top: 0;
     transform: none;
     margin-right: 0;
-    gap: 6px;
-    font-size: 0.85rem;
+    gap: 10px;
+    font-size: 0.9rem;
     order: 1;
+    background: rgba(255,255,255,0.08);
+    padding: 8px 12px;
+    border-radius: 25px;
+    border: 1px solid rgba(255,255,255,0.15);
+    backdrop-filter: blur(5px);
   }
   
   /* Segunda fila: Título centrado debajo */
   .app-title { 
-    font-size: 1.4rem; 
+    font-size: 1.5rem; 
     margin: 0;
     text-align: center;
     position: relative;
@@ -894,64 +944,141 @@ footer {
     transform: none;
     order: 2;
     width: 100%;
-    line-height: 1.2;
-    /* Mantener características de resplandecencia */
-    color: #f7cf67;
-    text-shadow: 0 2px 6px #232b4750;
+    line-height: 1.3;
+    font-weight: 800;
+    background: linear-gradient(135deg, #f7cf67 0%, #ffd700 50%, #f7cf67 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
     transition: all 0.3s ease;
+    letter-spacing: -0.5px;
   }
   
   /* Asegurar que la animación funcione en móvil */
   .app-title.agent-responding {
-    animation: titleGlow 2s ease-in-out infinite;
-    text-shadow: 
-      0 0 10px #f7cf67,
-      0 0 20px #f7cf67,
-      0 0 30px #f7cf67,
-      0 2px 6px #232b4750;
+    animation: modernTitleGlow 2s ease-in-out infinite;
   }
   
-  .user-avatar { width: 35px; height: 35px; }
-  #user-name { font-size: 0.9rem; }
+  .user-avatar { 
+    width: 38px; 
+    height: 38px;
+    border: 2px solid #f7cf67;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+  }
+  
+  .user-avatar:hover {
+    transform: scale(1.1);
+    border-color: #ffd700;
+  }
+  
+  #user-name { 
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+  
   .logout-btn { 
-    padding: 4px 8px; 
-    font-size: 0.8rem;
-    border-radius: 6px;
+    padding: 6px 12px; 
+    font-size: 0.85rem;
+    border-radius: 15px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+  }
+  
+  .logout-btn:hover {
+    background: linear-gradient(135deg, #f7cf67 0%, #ffd700 100%);
+    color: #1a1f35;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(247, 207, 103, 0.3);
   }
   
   /* Monitor móvil */
   .monitor-inner { 
-    border-radius: 15px; 
-    width: 98vw; 
-    min-height: 400px;
-    margin: 15px auto;
+    border-radius: 20px; 
+    width: 95vw; 
+    min-height: 420px;
+    margin: 20px auto;
+    background: linear-gradient(145deg, #222636 0%, #2a2f47 100%);
+    border: 2px solid rgba(255,255,255,0.1);
+    box-shadow: 
+      0 20px 40px rgba(0,0,0,0.3),
+      0 0 0 1px rgba(255,255,255,0.05) inset;
   }
-  .monitor-base { width: 80px; height: 18px; }
+  .monitor-base { 
+    width: 100px; 
+    height: 20px;
+    background: linear-gradient(90deg, #888 0%, #f7cf67 50%, #888 100%);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+  }
   
   /* Chat móvil */
   #chat-container { 
-    height: 250px; 
-    border-radius: 12px;
+    height: 280px; 
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 
+      0 10px 30px rgba(0,0,0,0.2),
+      0 0 0 1px rgba(255,255,255,0.05) inset;
   }
   
   #chat-form { 
-    gap: 6px; 
-    padding: 10px 12px; 
+    gap: 8px; 
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%);
+    border-top: 1px solid rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
   }
   
   #chat-input { 
     font-size: 16px; /* Evita zoom en iOS */
-    padding: 10px 12px;
+    padding: 12px 16px;
+    border-radius: 20px;
+    border: 2px solid rgba(46, 103, 248, 0.2);
+    background: rgba(255,255,255,0.9);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+  }
+  
+  #chat-input:focus {
+    border-color: #2e67f8;
+    box-shadow: 0 4px 20px rgba(46, 103, 248, 0.2);
+    transform: translateY(-1px);
   }
   
   #chat-form button { 
-    padding: 10px 12px; 
+    padding: 12px 16px; 
     font-size: 0.9rem;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #2e67f8 0%, #60b6fa 100%);
+    box-shadow: 0 4px 12px rgba(46, 103, 248, 0.3);
+    transition: all 0.3s ease;
+    font-weight: 600;
+  }
+  
+  #chat-form button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(46, 103, 248, 0.4);
   }
   
   #mic-button { 
-    min-width: 42px;
-    padding: 10px;
+    min-width: 45px;
+    padding: 12px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2ed573 0%, #26d65c 100%);
+    box-shadow: 0 4px 12px rgba(46, 213, 115, 0.3);
+  }
+  
+  #mic-button:hover {
+    transform: scale(1.1) translateY(-1px);
+    box-shadow: 0 6px 20px rgba(46, 213, 115, 0.4);
   }
   
   /* Mensajes móvil */
