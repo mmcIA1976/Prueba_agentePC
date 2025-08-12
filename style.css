@@ -107,34 +107,29 @@ header {
   }
 }
 
-/* Animación moderna y suave para móvil */
+/* Animación moderna y suave para móvil - solo filtros para evitar conflictos */
 @keyframes modernTitleGlow {
   0% {
-    background: linear-gradient(135deg, #f7cf67 0%, #ffd700 50%, #f7cf67 100%);
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 8px rgba(247, 207, 103, 0.4));
     transform: scale(1);
     opacity: 1;
   }
   25% {
-    background: linear-gradient(135deg, #f7cf67 0%, #ffeb3b 30%, #ffd700 70%, #f7cf67 100%);
     filter: drop-shadow(0 3px 6px rgba(0,0,0,0.35)) drop-shadow(0 0 12px rgba(247, 207, 103, 0.6));
     transform: scale(1.01);
     opacity: 0.95;
   }
   50% {
-    background: linear-gradient(135deg, #ffd700 0%, #ffeb3b 25%, #fff176 50%, #ffeb3b 75%, #f7cf67 100%);
-    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4)) drop-shadow(0 0 15px rgba(247, 207, 103, 0.7));
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4)) drop-shadow(0 0 15px rgba(247, 207, 103, 0.8)) drop-shadow(0 0 20px rgba(255, 215, 0, 0.5));
     transform: scale(1.015);
     opacity: 0.9;
   }
   75% {
-    background: linear-gradient(135deg, #f7cf67 0%, #ffeb3b 30%, #ffd700 70%, #f7cf67 100%);
     filter: drop-shadow(0 3px 6px rgba(0,0,0,0.35)) drop-shadow(0 0 12px rgba(247, 207, 103, 0.6));
     transform: scale(1.01);
     opacity: 0.95;
   }
   100% {
-    background: linear-gradient(135deg, #f7cf67 0%, #ffd700 50%, #f7cf67 100%);
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 8px rgba(247, 207, 103, 0.4));
     transform: scale(1);
     opacity: 1;
@@ -974,6 +969,11 @@ footer {
   /* Asegurar que la animación funcione en móvil con duración más larga */
   .app-title.agent-responding {
     animation: modernTitleGlow 3.5s ease-in-out infinite;
+    /* Restaurar el gradiente y text-fill durante la animación */
+    background: linear-gradient(135deg, #f7cf67 0%, #ffd700 50%, #f7cf67 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
   
   .user-avatar { 

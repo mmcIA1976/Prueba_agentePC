@@ -546,10 +546,10 @@ function appendMinimalAudioMessage(audioUrl, title = 'Audio', isBinary = false) 
     startTitleGlow();
   }
 
-  setupMiniAudioPlayer(audioId);
+  setupMiniAudioPlayer(audioId, title);
 }
 
-function setupMiniAudioPlayer(audioId) {
+function setupMiniAudioPlayer(audioId, title = '') {
   const audioElement = document.getElementById(audioId);
   const playBtn = document.getElementById(`btn-${audioId}`);
   const progressBar = document.getElementById(`progress-${audioId}`);
@@ -594,7 +594,7 @@ function setupMiniAudioPlayer(audioId) {
     timeDisplay.textContent = '0:00';
 
     // Detener animación del título cuando termine el audio (solo si no es audio de pensando)
-    if (!title.includes('Pensando')) {
+    if (!title || !title.includes('Pensando')) {
       setTimeout(() => {
         stopTitleGlow();
       }, 500); // Pequeño delay para efecto suave
