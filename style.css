@@ -568,7 +568,7 @@ header {
 
 .config-option li {
   padding: 10px 0 7px 0;
-  border-bottom: 1px solid #e6edfa;
+  border-bottom: 1px solid #e6e9fa;
   font-size: 1em;
   display: flex;
   flex-direction: column;
@@ -1060,14 +1060,14 @@ footer {
       0 0 0 1px rgba(255,255,255,0.05) inset;
   }
 
-  #chat-form { 
-    gap: 8px; 
-    padding: 10px 12px;
-    background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%);
-    border-top: 1px solid rgba(255,255,255,0.2);
-    backdrop-filter: blur(10px);
+  #chat-form {
     display: flex;
     flex-direction: row; /* Fila en móvil también */
+    gap: 8px;
+    padding: 10px 12px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+    background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%);
+    backdrop-filter: blur(10px);
     align-items: center;
   }
 
@@ -1077,7 +1077,7 @@ footer {
     margin-right: 8px;
   }
 
-  /* Contenedor de botones al lado derecho, vertical en móvil */
+  /* Contenedor de botones al lado derecho, vertical SOLO EN MÓVIL */
   .button-container {
     display: flex;
     flex-direction: column; /* Vertical en móvil */
