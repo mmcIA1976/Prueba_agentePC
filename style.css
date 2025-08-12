@@ -34,6 +34,14 @@ header {
   margin: 0 auto;
   height: 74px;
   padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* En escritorio, mantener layout horizontal */
+.header-top-row {
+  display: contents; /* Permite que los elementos se posicionen como antes */
 }
 
 .header-logo {
@@ -837,36 +845,70 @@ footer {
 }
 
 @media (max-width: 600px) {
-  /* Header compacto para móvil */
+  /* Header mejorado para móvil */
   .header-content { 
-    height: 65px; 
-    padding: 0 12px;
+    height: auto;
+    min-height: 80px;
+    padding: 12px;
     flex-direction: column;
-    gap: 8px;
-    justify-content: center;
+    gap: 12px;
+    justify-content: flex-start;
+  }
+  
+  /* Primera fila: Logo izquierda + Usuario derecha */
+  .header-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
   }
   
   .header-logo { 
     width: 50px; 
     height: 50px;
-    order: -1;
-  }
-  
-  .app-title { 
-    font-size: 1.3rem; 
-    margin: 0;
-    text-align: center;
+    position: relative;
+    left: 0;
+    top: 0;
     order: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 280px;
   }
   
   .user-info { 
-    order: 1;
+    position: relative;
+    right: 0;
+    top: 0;
+    transform: none;
+    margin-right: 0;
     gap: 6px;
     font-size: 0.85rem;
+    order: 1;
+  }
+  
+  /* Segunda fila: Título centrado debajo */
+  .app-title { 
+    font-size: 1.4rem; 
+    margin: 0;
+    text-align: center;
+    position: relative;
+    left: 0;
+    top: 0;
+    transform: none;
+    order: 2;
+    width: 100%;
+    line-height: 1.2;
+    /* Mantener características de resplandecencia */
+    color: #f7cf67;
+    text-shadow: 0 2px 6px #232b4750;
+    transition: all 0.3s ease;
+  }
+  
+  /* Asegurar que la animación funcione en móvil */
+  .app-title.agent-responding {
+    animation: titleGlow 2s ease-in-out infinite;
+    text-shadow: 
+      0 0 10px #f7cf67,
+      0 0 20px #f7cf67,
+      0 0 30px #f7cf67,
+      0 2px 6px #232b4750;
   }
   
   .user-avatar { width: 35px; height: 35px; }
