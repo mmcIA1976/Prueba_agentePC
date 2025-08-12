@@ -466,6 +466,23 @@ function playBinaryAudio(audioArrayBuffer) {
   }
 }
 
+// --- ANIMACIÓN DEL TÍTULO ---
+function startTitleGlow() {
+  const titleElement = document.querySelector('.app-title');
+  if (titleElement) {
+    titleElement.classList.add('agent-responding');
+    console.log('✨ Iniciando animación de resplandor del título');
+  }
+}
+
+function stopTitleGlow() {
+  const titleElement = document.querySelector('.app-title');
+  if (titleElement) {
+    titleElement.classList.remove('agent-responding');
+    console.log('⭐ Deteniendo animación de resplandor del título');
+  }
+}
+
 // --- UI HELPERS ---
 function appendMessage(author, text) {
   const div = document.createElement('div');
@@ -577,10 +594,7 @@ function setupMiniAudioPlayer(audioId) {
     timeDisplay.textContent = '0:00';
 
     // Detener animación del título cuando termine el audio (solo si no es audio de pensando)
-    const audioElement = document.getElementById(audioId);
-    const audioTitle = audioElement?.closest('.minimal-audio-player')?.querySelector('.audio-title')?.textContent || '';
-
-    if (!audioTitle.includes('Pensando')) {
+    if (!title.includes('Pensando')) {
       setTimeout(() => {
         stopTitleGlow();
       }, 500); // Pequeño delay para efecto suave
