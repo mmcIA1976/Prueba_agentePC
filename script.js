@@ -835,8 +835,28 @@ document.addEventListener('DOMContentLoaded', () => {
       appendMessage('Tú', message);
       await saveMessageToDB('Tú', message);
       chatInput.value = '';
+      
+      // Resetear altura del textarea
+      chatInput.style.height = 'auto';
+      chatInput.style.height = chatInput.scrollHeight + 'px';
 
       await sendMessage(message);
+    });
+  }
+
+  // Auto-resize del textarea
+  if (chatInput) {
+    chatInput.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = this.scrollHeight + 'px';
+    });
+
+    // Permitir Enter para nueva línea, Ctrl+Enter o Shift+Enter para enviar
+    chatInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
+        e.preventDefault();
+        chatForm.dispatchEvent(new Event('submit'));
+      }
     });
   }
 

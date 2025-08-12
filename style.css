@@ -354,6 +354,14 @@ header {
   font-size: 1rem;
   background: #f7fafd;
   transition: border 0.2s;
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  resize: none;
+  min-height: 40px;
+  max-height: 120px;
+  overflow-y: auto;
 }
 
 #chat-input:focus {
@@ -1101,7 +1109,14 @@ footer {
     transition: all 0.3s ease;
     flex: 1;
     min-width: 0; /* Permite que el input se comprima si es necesario */
-    height: 44px; /* Altura fija para alinear con los botones */
+    min-height: 44px; /* Altura mínima en lugar de fija */
+    max-height: 120px; /* Máxima altura antes de scroll */
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    resize: none;
+    overflow-y: auto;
   }
 
   #chat-input:focus {
