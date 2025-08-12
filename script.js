@@ -412,7 +412,7 @@ async function sendMessage(message) {
     if (_out && _out.config_final && Array.isArray(_out.config_final) && _out.config_final.length > 0) {
       console.log('✅ Renderizando configuración final:', _out.config_final);
       renderConfiguracion(_out.config_final);
-      
+
       // Reproducir audio fijo de configuración final
       console.log('🎵 Reproduciendo audio específico para configuración final...');
       playConfiguracionFinalAudio();
@@ -455,9 +455,9 @@ function playBinaryAudio(audioArrayBuffer) {
 
     const audioBlob = new Blob([audioArrayBuffer], { type: 'audio/mpeg' });
     const audioUrl = URL.createObjectURL(audioBlob);
-    
+
     appendMinimalAudioMessage(audioUrl, 'Audio de Respuesta', true);
-    
+
     setTimeout(() => URL.revokeObjectURL(audioUrl), 600000);
 
   } catch (error) {
@@ -477,6 +477,15 @@ function appendMessage(author, text) {
   div.innerHTML = `${avatarImg}<div>${text}</div>`;
   chatLog.appendChild(div);
 
+  // Activar animación del título SOLO cuando el agente responde con texto real
+  if (author === 'Agente' && !text.includes('🧠') && !text.includes('Sistema')) {
+    startTitleGlow();
+    // Detener la animación después de un tiempo
+    setTimeout(() => {
+      stopTitleGlow();
+    }, 4000); // 4 segundos de animación
+  }
+
   if (author === 'Agente' && text.length > 250) {
     div.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } else {
@@ -488,7 +497,7 @@ function appendMessage(author, text) {
 function appendMinimalAudioMessage(audioUrl, title = 'Audio', isBinary = false) {
   const audioId = 'mini_audio_' + Date.now();
   const div = document.createElement('div');
-  
+
   div.className = 'chat-message agent audio-message';
   div.innerHTML = `
     <img class="avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=robot" alt="IA">
@@ -511,10 +520,15 @@ function appendMinimalAudioMessage(audioUrl, title = 'Audio', isBinary = false) 
       </audio>
     </div>
   `;
-  
+
   chatLog.appendChild(div);
   chatLog.scrollTop = chatLog.scrollHeight;
-  
+
+  // Activar animación del título cuando se reproduce audio del agente (solo si no es audio de pensando)
+  if (!title.includes('Pensando')) {
+    startTitleGlow();
+  }
+
   setupMiniAudioPlayer(audioId);
 }
 
@@ -523,9 +537,9 @@ function setupMiniAudioPlayer(audioId) {
   const playBtn = document.getElementById(`btn-${audioId}`);
   const progressBar = document.getElementById(`progress-${audioId}`);
   const timeDisplay = document.getElementById(`time-${audioId}`);
-  
+
   if (!audioElement || !playBtn || !progressBar || !timeDisplay) return;
-  
+
   // Auto-reproducir cuando esté listo
   audioElement.addEventListener('loadeddata', () => {
     console.log('✅ Audio minimalista cargado y listo');
@@ -543,26 +557,36 @@ function setupMiniAudioPlayer(audioId) {
       }
     }, 500);
   });
-  
+
   // Actualizar progreso
   audioElement.addEventListener('timeupdate', () => {
     if (audioElement.duration) {
       const progress = (audioElement.currentTime / audioElement.duration) * 100;
       progressBar.style.width = progress + '%';
-      
+
       const minutes = Math.floor(audioElement.currentTime / 60);
       const seconds = Math.floor(audioElement.currentTime % 60);
       timeDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
   });
-  
+
   // Cuando termine
   audioElement.addEventListener('ended', () => {
     playBtn.textContent = '▶️';
     progressBar.style.width = '0%';
     timeDisplay.textContent = '0:00';
+
+    // Detener animación del título cuando termine el audio (solo si no es audio de pensando)
+    const audioElement = document.getElementById(audioId);
+    const audioTitle = audioElement?.closest('.minimal-audio-player')?.querySelector('.audio-title')?.textContent || '';
+
+    if (!audioTitle.includes('Pensando')) {
+      setTimeout(() => {
+        stopTitleGlow();
+      }, 500); // Pequeño delay para efecto suave
+    }
   });
-  
+
   // Error
   audioElement.addEventListener('error', () => {
     playBtn.textContent = '❌';
@@ -574,9 +598,9 @@ function setupMiniAudioPlayer(audioId) {
 window.toggleAudioPlayback = function(audioId) {
   const audioElement = document.getElementById(audioId);
   const playBtn = document.getElementById(`btn-${audioId}`);
-  
+
   if (!audioElement || !playBtn) return;
-  
+
   if (audioElement.paused) {
     audioElement.play();
     playBtn.textContent = '⏸️';
@@ -597,7 +621,10 @@ function showLoadingSpinner() {
   chatLog.appendChild(div);
   chatLog.scrollTop = chatLog.scrollHeight;
   loadingSpinnerElement = div;
-  
+
+  // NO iniciar animación del título durante el pensando
+  // La animación se activará cuando llegue la respuesta real
+
   // Iniciar sistema de audio de pensando
   startThinkingAudioSystem();
 }
@@ -607,14 +634,14 @@ function startThinkingAudioSystem() {
   console.log('🧠 Iniciando sistema de audio de pensando...');
   thinkingStartTime = Date.now();
   clearThinkingTimeouts();
-  
+
   // Programar audios en intervalos: 15s, 40s, 1m20s
   THINKING_INTERVALS.forEach((interval, index) => {
     const timeout = setTimeout(() => {
       console.log(`🧠 Reproduciendo audio de pensando (intervalo ${index + 1}: ${interval/1000}s)`);
       playThinkingAudio(index + 1);
     }, interval);
-    
+
     thinkingTimeouts.push(timeout);
   });
 }
@@ -627,11 +654,11 @@ function clearThinkingTimeouts() {
 function playThinkingAudio(iteration) {
   try {
     console.log(`🧠 Reproduciendo audio de pensando (${iteration})`);
-    
+
     // Mostrar mensaje contextual según la iteración
     let message = '';
     let audioUrl = THINKING_AUDIO_URL; // Por defecto usar el primer audio
-    
+
     switch(iteration) {
       case 1:
         message = 'El agente está procesando la información... En unos minutos tendrás tu configuración';
@@ -649,10 +676,10 @@ function playThinkingAudio(iteration) {
       default:
         message = 'El agente sigue trabajando en tu configuración perfecta...';
     }
-    
+
     appendMessage('Sistema', `🧠 ${message}`);
     appendMinimalAudioMessage(audioUrl, `Audio de Pensando ${iteration}`);
-    
+
   } catch (error) {
     console.error('❌ Error reproduciendo audio de pensando:', error);
   }
@@ -663,15 +690,17 @@ function hideLoadingSpinner() {
     chatLog.removeChild(loadingSpinnerElement);
     loadingSpinnerElement = null;
   }
-  
+
   // Detener sistema de audio de pensando
   stopThinkingAudioSystem();
+
+  // La animación del título se activará cuando aparezca la respuesta real
 }
 
 function stopThinkingAudioSystem() {
   console.log('🧠 Deteniendo sistema de audio de pensando');
   clearThinkingTimeouts();
-  
+
   if (thinkingStartTime) {
     const thinkingDuration = (Date.now() - thinkingStartTime) / 1000;
     console.log(`🧠 El agente estuvo pensando ${thinkingDuration.toFixed(1)} segundos`);
@@ -710,7 +739,7 @@ function renderConfiguracion(config_final) {
 function playConfiguracionFinalAudio() {
   // URL fija del audio de configuración final
   const CONFIGURACION_FINAL_AUDIO_URL = "https://icobjdsqjjkumxsrlflf.supabase.co/storage/v1/object/public/conversacionesagente/2025-08-11T15:57:06.296+02:00.mp3";
-  
+
   try {
     console.log('🎵 Reproduciendo audio fijo de configuración final');
     appendMinimalAudioMessage(CONFIGURACION_FINAL_AUDIO_URL, 'Configuración Final - Audio');
