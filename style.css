@@ -825,7 +825,7 @@ footer {
     align-items: center;
     justify-content: space-between;
   }
-  
+
   .header-logo { 
     width: 65px; 
     height: 65px;
@@ -833,7 +833,7 @@ footer {
     left: 0;
     top: 0;
   }
-  
+
   .app-title { 
     font-size: 1.8rem; 
     position: relative;
@@ -845,7 +845,7 @@ footer {
     margin: 0 15px;
     line-height: 1.2;
   }
-  
+
   .user-info { 
     position: relative;
     right: 0;
@@ -854,11 +854,11 @@ footer {
     margin-right: 0;
     gap: 8px;
   }
-  
+
   .user-avatar { width: 40px; height: 40px; }
   #user-name { font-size: 1rem; }
   .logout-btn { padding: 6px 12px; font-size: 0.9rem; }
-  
+
   /* Monitor optimizado */
   .monitor-inner { 
     width: 95vw; 
@@ -867,7 +867,7 @@ footer {
   }
   .monitor-base { width: 120px; }
   #chat-container { height: 280px; }
-  
+
   /* Login mejorado */
   .login-logo { width: 80px; height: 80px; }
   .login-container { padding: 40px 20px; }
@@ -882,7 +882,7 @@ footer {
       0 4px 20px rgba(0,0,0,0.3),
       0 1px 0 rgba(255,255,255,0.1) inset;
   }
-  
+
   .header-content { 
     height: auto;
     min-height: 85px;
@@ -897,7 +897,7 @@ footer {
     border: 1px solid rgba(255,255,255,0.1);
     box-shadow: 0 8px 32px rgba(0,0,0,0.2);
   }
-  
+
   /* Primera fila: Logo izquierda + Usuario derecha */
   .header-top-row {
     display: flex;
@@ -905,7 +905,7 @@ footer {
     align-items: center;
     width: 100%;
   }
-  
+
   .header-logo { 
     width: 55px; 
     height: 55px;
@@ -919,14 +919,14 @@ footer {
       0 0 0 3px rgba(247, 207, 103, 0.3);
     transition: all 0.3s ease;
   }
-  
+
   .header-logo:hover {
     transform: scale(1.05);
     box-shadow: 
       0 8px 25px rgba(0,0,0,0.3),
       0 0 0 3px rgba(247, 207, 103, 0.5);
   }
-  
+
   .user-info { 
     position: relative;
     right: 0;
@@ -942,7 +942,7 @@ footer {
     border: 1px solid rgba(255,255,255,0.15);
     backdrop-filter: blur(5px);
   }
-  
+
   /* Segunda fila: Título centrado debajo */
   .app-title { 
     font-size: 1.5rem; 
@@ -965,7 +965,7 @@ footer {
     transition: all 0.3s ease;
     letter-spacing: -0.5px;
   }
-  
+
   /* Asegurar que la animación funcione en móvil con duración más larga */
   .app-title.agent-responding {
     animation: modernTitleGlow 3.5s ease-in-out infinite;
@@ -975,7 +975,7 @@ footer {
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  
+
   .user-avatar { 
     width: 38px; 
     height: 38px;
@@ -983,19 +983,19 @@ footer {
     box-shadow: 0 3px 10px rgba(0,0,0,0.2);
     transition: all 0.3s ease;
   }
-  
+
   .user-avatar:hover {
     transform: scale(1.1);
     border-color: #ffd700;
   }
-  
+
   #user-name { 
     font-size: 0.95rem;
     font-weight: 600;
     color: #fff;
     text-shadow: 0 1px 2px rgba(0,0,0,0.3);
   }
-  
+
   .logout-btn { 
     padding: 6px 12px; 
     font-size: 0.85rem;
@@ -1007,14 +1007,14 @@ footer {
     transition: all 0.3s ease;
     backdrop-filter: blur(5px);
   }
-  
+
   .logout-btn:hover {
     background: linear-gradient(135deg, #f7cf67 0%, #ffd700 100%);
     color: #1a1f35;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(247, 207, 103, 0.3);
   }
-  
+
   /* Monitor móvil */
   .monitor-inner { 
     border-radius: 20px; 
@@ -1033,7 +1033,7 @@ footer {
     background: linear-gradient(90deg, #888 0%, #f7cf67 50%, #888 100%);
     box-shadow: 0 8px 16px rgba(0,0,0,0.4);
   }
-  
+
   /* Chat móvil */
   #chat-container { 
     height: 280px; 
@@ -1043,7 +1043,7 @@ footer {
       0 10px 30px rgba(0,0,0,0.2),
       0 0 0 1px rgba(255,255,255,0.05) inset;
   }
-  
+
   #chat-form { 
     gap: 8px; 
     padding: 10px 12px;
@@ -1054,7 +1054,15 @@ footer {
     align-items: flex-end;
     justify-content: space-between;
   }
-  
+
+  /* Contenedor vertical para botones solo en móvil */
+  .chat-buttons-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
   #chat-input { 
     font-size: 16px; /* Evita zoom en iOS */
     padding: 12px 14px;
@@ -1067,21 +1075,13 @@ footer {
     min-width: 0; /* Permite que el input se comprima si es necesario */
     height: 44px; /* Altura fija para alinear con los botones */
   }
-  
-  /* Contenedor vertical para los botones */
-  .chat-buttons-container {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex-shrink: 0;
-  }
-  
+
   #chat-input:focus {
     border-color: #2e67f8;
     box-shadow: 0 4px 20px rgba(46, 103, 248, 0.2);
     transform: translateY(-1px);
   }
-  
+
   #chat-form button { 
     padding: 8px 12px; 
     font-size: 0.75rem;
@@ -1099,12 +1099,12 @@ footer {
     align-items: center;
     justify-content: center;
   }
-  
+
   #chat-form button:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(46, 103, 248, 0.4);
   }
-  
+
   #mic-button { 
     min-width: 50px;
     max-width: 60px;
@@ -1120,53 +1120,53 @@ footer {
     align-items: center;
     justify-content: center;
   }
-  
+
   #mic-button:hover {
     transform: scale(1.1) translateY(-1px);
     box-shadow: 0 6px 20px rgba(46, 213, 115, 0.4);
   }
-  
+
   /* Mensajes móvil */
   .chat-message {
     max-width: 85vw;
     font-size: 0.95rem;
     padding: 8px 12px;
   }
-  
+
   .avatar { 
     width: 22px; 
     height: 22px; 
   }
-  
+
   /* Progreso móvil */
   .progress-indicator { 
     padding: 12px 20px 8px 20px; 
   }
-  
+
   .progress-steps { 
     font-size: 0.75rem;
     gap: 2px;
   }
-  
+
   .progress-label { 
     font-size: 0.85rem; 
   }
-  
+
   /* Login móvil */
   .login-logo { width: 70px; height: 70px; }
   .login-container { 
     padding: 30px 16px; 
     margin: 0 8px;
   }
-  
+
   .login-content h1 { 
     font-size: 1.8rem; 
   }
-  
+
   .login-content p { 
     font-size: 1rem; 
   }
-  
+
   /* Configuraciones móvil */
   .config-option {
     margin: 15px 8px;
@@ -1175,26 +1175,26 @@ footer {
     max-width: none;
     width: calc(100vw - 32px);
   }
-  
+
   .config-option h3 {
     font-size: 1.1rem;
   }
-  
+
   .config-option li {
     font-size: 0.9rem;
     padding: 8px 0 6px 0;
   }
-  
+
   /* Audio móvil */
   .minimal-audio-player {
     gap: 6px;
   }
-  
+
   .audio-controls-mini {
     padding: 8px 12px;
     gap: 10px;
   }
-  
+
   .play-pause-btn {
     width: 36px;
     height: 36px;
