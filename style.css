@@ -51,6 +51,7 @@ header {
   text-shadow: 0 2px 6px #232b4750;
   justify-self: center;
   align-self: center;
+  margin-left: 100px;
 }
 
 .user-info {
@@ -59,6 +60,7 @@ header {
   align-items: center;
   gap: 12px;
   justify-self: end;
+  margin-right: 100px;
 }
 
 .user-avatar {
