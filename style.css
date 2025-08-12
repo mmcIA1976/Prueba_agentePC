@@ -36,7 +36,6 @@ header {
   border-radius: 20px;
   background: #fff;
   box-shadow: 0 4px 16px rgba(0,0,0,0.09);
-  margin: 0 40px 0 0;
   flex-shrink: 0;
 }
 
@@ -51,14 +50,12 @@ header {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-left: 200px;
 }
 
 .user-info {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-left: 80px;
   flex-shrink: 0;
 }
 
