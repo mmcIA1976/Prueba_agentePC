@@ -71,7 +71,7 @@ header {
 
 /* Animación de resplandor cuando el agente responde */
 .app-title.agent-responding {
-  animation: titleGlow 2s ease-in-out infinite;
+  animation: titleGlow 3.5s ease-in-out infinite;
   text-shadow: 
     0 0 10px #f7cf67,
     0 0 20px #f7cf67,
@@ -107,22 +107,37 @@ header {
   }
 }
 
-/* Animación moderna para móvil */
+/* Animación moderna y suave para móvil */
 @keyframes modernTitleGlow {
   0% {
     background: linear-gradient(135deg, #f7cf67 0%, #ffd700 50%, #f7cf67 100%);
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 10px rgba(247, 207, 103, 0.5));
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 8px rgba(247, 207, 103, 0.4));
     transform: scale(1);
+    opacity: 1;
+  }
+  25% {
+    background: linear-gradient(135deg, #f7cf67 0%, #ffeb3b 30%, #ffd700 70%, #f7cf67 100%);
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.35)) drop-shadow(0 0 12px rgba(247, 207, 103, 0.6));
+    transform: scale(1.01);
+    opacity: 0.95;
   }
   50% {
-    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #f7cf67 100%);
-    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4)) drop-shadow(0 0 20px rgba(247, 207, 103, 0.8));
-    transform: scale(1.02);
+    background: linear-gradient(135deg, #ffd700 0%, #ffeb3b 25%, #fff176 50%, #ffeb3b 75%, #f7cf67 100%);
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4)) drop-shadow(0 0 15px rgba(247, 207, 103, 0.7));
+    transform: scale(1.015);
+    opacity: 0.9;
+  }
+  75% {
+    background: linear-gradient(135deg, #f7cf67 0%, #ffeb3b 30%, #ffd700 70%, #f7cf67 100%);
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.35)) drop-shadow(0 0 12px rgba(247, 207, 103, 0.6));
+    transform: scale(1.01);
+    opacity: 0.95;
   }
   100% {
     background: linear-gradient(135deg, #f7cf67 0%, #ffd700 50%, #f7cf67 100%);
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 10px rgba(247, 207, 103, 0.5));
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 8px rgba(247, 207, 103, 0.4));
     transform: scale(1);
+    opacity: 1;
   }
 }
 
@@ -956,9 +971,9 @@ footer {
     letter-spacing: -0.5px;
   }
   
-  /* Asegurar que la animación funcione en móvil */
+  /* Asegurar que la animación funcione en móvil con duración más larga */
   .app-title.agent-responding {
-    animation: modernTitleGlow 2s ease-in-out infinite;
+    animation: modernTitleGlow 3.5s ease-in-out infinite;
   }
   
   .user-avatar { 
