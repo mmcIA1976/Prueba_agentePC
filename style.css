@@ -41,10 +41,10 @@ header {
 
 .app-title {
   position: absolute;
-  left: 365px;
-  top: calc(50% - 20px);
+  left: 357px;
+  top: calc(50% - 28px);
   transform: translateY(-50%);
-  font-size: 2.5rem;
+  font-size: 2.8rem;
   font-weight: 800;
   letter-spacing: -1px;
   color: #f7cf67;
