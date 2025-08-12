@@ -497,10 +497,10 @@ function appendMessage(author, text) {
   // Activar animación del título SOLO cuando el agente responde con texto real
   if (author === 'Agente' && !text.includes('🧠') && !text.includes('Sistema')) {
     startTitleGlow();
-    // Detener la animación después de un tiempo
+    // Detener la animación después de un tiempo más largo
     setTimeout(() => {
       stopTitleGlow();
-    }, 4000); // 4 segundos de animación
+    }, 6000); // 6 segundos de animación
   }
 
   if (author === 'Agente' && text.length > 250) {
