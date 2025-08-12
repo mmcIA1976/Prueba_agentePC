@@ -41,7 +41,7 @@ header {
 
 .app-title {
   position: absolute;
-  left: 357px;
+  left: 352px;
   top: calc(50% - 28px);
   transform: translateY(-50%);
   font-size: 2.8rem;
