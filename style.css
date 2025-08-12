@@ -1069,24 +1069,20 @@ footer {
     display: flex;
     flex-direction: column; /* Vertical solo en móvil */
     align-items: stretch;
-    justify-content: space-between;
   }
 
-  /* Contenedor horizontal para input */
-  .chat-input-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
+  /* Input toma toda la fila */
+  #chat-input {
     margin-bottom: 8px;
   }
 
-  /* Contenedor horizontal para los botones */
-  .chat-buttons-container {
-    display: flex;
-    flex-direction: row; /* Horizontal en móvil también */
-    gap: 8px;
-    justify-content: space-between;
-    flex-shrink: 0;
+  /* Los botones en fila horizontal al final */
+  #chat-form button {
+    flex: 1;
+  }
+
+  #mic-button {
+    margin-right: 8px;
   }
 
   #chat-input { 
