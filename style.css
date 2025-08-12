@@ -21,46 +21,47 @@ header {
 }
 
 .header-content {
+  position: relative;
   max-width: 1200px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  grid-template-areas: "logo title user";
-  align-items: center;
-  gap: 20px;
+  height: 74px;
   padding: 0 20px;
 }
 
 .header-logo {
-  grid-area: logo;
+  position: absolute;
+  left: 20px;
+  top: 0;
   width: 74px;
   height: 74px;
   border-radius: 20px;
   background: #fff;
   box-shadow: 0 4px 16px rgba(0,0,0,0.09);
-  justify-self: start;
 }
 
 .app-title {
-  grid-area: title;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   font-size: 2.5rem;
   font-weight: 800;
-  text-align: center;
   letter-spacing: -1px;
   color: #f7cf67;
   text-shadow: 0 2px 6px #232b4750;
-  justify-self: center;
-  align-self: center;
+  white-space: nowrap;
   margin-left: 100px;
 }
 
 .user-info {
-  grid-area: user;
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   gap: 12px;
-  justify-self: end;
-  margin-left: 100px;
+  margin-right: -100px;
 }
 
 .user-avatar {
@@ -733,9 +734,10 @@ footer {
 
 /* ---- RESPONSIVE ---- */
 @media (max-width: 900px) {
-  .header-content { grid-template-columns: auto 1fr auto; grid-template-areas: "logo title user"; gap: 10px; }
-  .app-title { font-size: 1.5rem; margin-left: 20px; margin-right: 20px; }
+  .header-content { height: 60px; }
   .header-logo { width: 60px; height: 60px; }
+  .app-title { font-size: 1.5rem; margin-left: 50px; }
+  .user-info { margin-right: -50px; }
   .user-avatar { width: 34px; height: 34px; }
   .monitor-inner { width: 98vw; min-height: 420px; }
   .monitor-base { width: 85px; }
@@ -745,10 +747,11 @@ footer {
 }
 
 @media (max-width: 600px) {
-  .header-content { grid-template-columns: auto 1fr auto; grid-template-areas: "logo title user"; gap: 8px; }
+  .header-content { height: 46px; }
   .header-logo { width: 46px; height: 46px; }
+  .app-title { font-size: 1.11rem; margin-left: 20px; }
+  .user-info { margin-right: -20px; }
   .monitor-inner { border-radius: 13px; width: 99vw; min-height: 380px; }
   .monitor-base { width: 60px; }
-  .app-title { font-size: 1.11rem; margin-left: 10px; margin-right: 10px; }
   .login-logo { width: 58px; height: 58px; }
 }
