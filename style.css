@@ -50,9 +50,6 @@ header {
   color: #f7cf67;
   text-shadow: 0 2px 6px #232b4750;
   white-space: nowrap;
-  /* Mejor compatibilidad con iframes */
-  z-index: 1;
-  will-change: transform;
 }
 
 .user-info {
