@@ -50,6 +50,45 @@ header {
   color: #f7cf67;
   text-shadow: 0 2px 6px #232b4750;
   white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+/* Animación de resplandor cuando el agente responde */
+.app-title.agent-responding {
+  animation: titleGlow 2s ease-in-out infinite;
+  text-shadow: 
+    0 0 10px #f7cf67,
+    0 0 20px #f7cf67,
+    0 0 30px #f7cf67,
+    0 2px 6px #232b4750;
+}
+
+@keyframes titleGlow {
+  0% {
+    text-shadow: 
+      0 0 5px #f7cf67,
+      0 0 10px #f7cf67,
+      0 0 15px #f7cf67,
+      0 2px 6px #232b4750;
+    color: #f7cf67;
+  }
+  50% {
+    text-shadow: 
+      0 0 20px #f7cf67,
+      0 0 30px #f7cf67,
+      0 0 40px #f7cf67,
+      0 0 50px #f7cf67,
+      0 2px 6px #232b4750;
+    color: #fff;
+  }
+  100% {
+    text-shadow: 
+      0 0 5px #f7cf67,
+      0 0 10px #f7cf67,
+      0 0 15px #f7cf67,
+      0 2px 6px #232b4750;
+    color: #f7cf67;
+  }
 }
 
 .user-info {
