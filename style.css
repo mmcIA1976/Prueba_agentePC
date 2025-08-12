@@ -832,6 +832,13 @@ footer {
   align-items: center;
 }
 
+/* Contenedor de botones horizontal en escritorio */
+.button-container {
+  display: flex;
+  flex-direction: row; /* Horizontal en escritorio */
+  gap: 8px;
+}
+
 @media (max-width: 900px) {
   /* Header mejorado para tablet */
   .header-content { 
@@ -1080,7 +1087,7 @@ footer {
   /* Contenedor de botones al lado derecho, vertical SOLO EN MÓVIL */
   .button-container {
     display: flex;
-    flex-direction: column; /* Vertical en móvil */
+    flex-direction: column !important; /* Vertical en móvil */
     gap: 6px;
   }
 
