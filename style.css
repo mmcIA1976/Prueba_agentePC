@@ -9,6 +9,11 @@ body {
   margin: 0;
   display: flex;
   flex-direction: column;
+  /* Mejoras para móvil */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
 }
 
 /* ---- HEADER ---- */
@@ -18,6 +23,9 @@ header {
   color: #fff;
   padding: 30px 0 22px 0;
   box-shadow: 0 2px 14px rgba(50,50,93,0.13);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .header-content {
@@ -772,32 +780,210 @@ footer {
 
 /* ---- RESPONSIVE ---- */
 @media (max-width: 900px) {
-  .header-content { height: 60px; }
-  .header-logo { width: 60px; height: 60px; }
-  .app-title { 
-    font-size: 1.5rem; 
-    left: 50%;
-    transform: translate(-50%, -50%);
+  /* Header mejorado para tablet */
+  .header-content { 
+    height: 70px; 
+    padding: 0 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
-  .user-info { margin-right: 0; }
-  .user-avatar { width: 34px; height: 34px; }
-  .monitor-inner { width: 98vw; min-height: 420px; }
-  .monitor-base { width: 85px; }
-  #chat-container { height: 200px; }
-  .login-logo { width: 74px; height: 74px; }
-  .login-container { padding: 34px 8px; }
+  
+  .header-logo { 
+    width: 65px; 
+    height: 65px;
+    position: relative;
+    left: 0;
+    top: 0;
+  }
+  
+  .app-title { 
+    font-size: 1.8rem; 
+    position: relative;
+    left: 0;
+    top: 0;
+    transform: none;
+    text-align: center;
+    flex: 1;
+    margin: 0 15px;
+    line-height: 1.2;
+  }
+  
+  .user-info { 
+    position: relative;
+    right: 0;
+    top: 0;
+    transform: none;
+    margin-right: 0;
+    gap: 8px;
+  }
+  
+  .user-avatar { width: 40px; height: 40px; }
+  #user-name { font-size: 1rem; }
+  .logout-btn { padding: 6px 12px; font-size: 0.9rem; }
+  
+  /* Monitor optimizado */
+  .monitor-inner { 
+    width: 95vw; 
+    min-height: 450px;
+    margin: 20px auto;
+  }
+  .monitor-base { width: 120px; }
+  #chat-container { height: 280px; }
+  
+  /* Login mejorado */
+  .login-logo { width: 80px; height: 80px; }
+  .login-container { padding: 40px 20px; }
 }
 
 @media (max-width: 600px) {
-  .header-content { height: 46px; }
-  .header-logo { width: 46px; height: 46px; }
-  .app-title { 
-    font-size: 1.11rem; 
-    left: 50%;
-    transform: translate(-50%, -50%);
+  /* Header compacto para móvil */
+  .header-content { 
+    height: 65px; 
+    padding: 0 12px;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
   }
-  .user-info { margin-right: 0; }
-  .monitor-inner { border-radius: 13px; width: 99vw; min-height: 380px; }
-  .monitor-base { width: 60px; }
-  .login-logo { width: 58px; height: 58px; }
+  
+  .header-logo { 
+    width: 50px; 
+    height: 50px;
+    order: -1;
+  }
+  
+  .app-title { 
+    font-size: 1.3rem; 
+    margin: 0;
+    text-align: center;
+    order: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 280px;
+  }
+  
+  .user-info { 
+    order: 1;
+    gap: 6px;
+    font-size: 0.85rem;
+  }
+  
+  .user-avatar { width: 35px; height: 35px; }
+  #user-name { font-size: 0.9rem; }
+  .logout-btn { 
+    padding: 4px 8px; 
+    font-size: 0.8rem;
+    border-radius: 6px;
+  }
+  
+  /* Monitor móvil */
+  .monitor-inner { 
+    border-radius: 15px; 
+    width: 98vw; 
+    min-height: 400px;
+    margin: 15px auto;
+  }
+  .monitor-base { width: 80px; height: 18px; }
+  
+  /* Chat móvil */
+  #chat-container { 
+    height: 250px; 
+    border-radius: 12px;
+  }
+  
+  #chat-form { 
+    gap: 6px; 
+    padding: 10px 12px; 
+  }
+  
+  #chat-input { 
+    font-size: 16px; /* Evita zoom en iOS */
+    padding: 10px 12px;
+  }
+  
+  #chat-form button { 
+    padding: 10px 12px; 
+    font-size: 0.9rem;
+  }
+  
+  #mic-button { 
+    min-width: 42px;
+    padding: 10px;
+  }
+  
+  /* Mensajes móvil */
+  .chat-message {
+    max-width: 85vw;
+    font-size: 0.95rem;
+    padding: 8px 12px;
+  }
+  
+  .avatar { 
+    width: 22px; 
+    height: 22px; 
+  }
+  
+  /* Progreso móvil */
+  .progress-indicator { 
+    padding: 12px 20px 8px 20px; 
+  }
+  
+  .progress-steps { 
+    font-size: 0.75rem;
+    gap: 2px;
+  }
+  
+  .progress-label { 
+    font-size: 0.85rem; 
+  }
+  
+  /* Login móvil */
+  .login-logo { width: 70px; height: 70px; }
+  .login-container { 
+    padding: 30px 16px; 
+    margin: 0 8px;
+  }
+  
+  .login-content h1 { 
+    font-size: 1.8rem; 
+  }
+  
+  .login-content p { 
+    font-size: 1rem; 
+  }
+  
+  /* Configuraciones móvil */
+  .config-option {
+    margin: 15px 8px;
+    padding: 20px 20px 15px 20px;
+    border-radius: 15px;
+    max-width: none;
+    width: calc(100vw - 32px);
+  }
+  
+  .config-option h3 {
+    font-size: 1.1rem;
+  }
+  
+  .config-option li {
+    font-size: 0.9rem;
+    padding: 8px 0 6px 0;
+  }
+  
+  /* Audio móvil */
+  .minimal-audio-player {
+    gap: 6px;
+  }
+  
+  .audio-controls-mini {
+    padding: 8px 12px;
+    gap: 10px;
+  }
+  
+  .play-pause-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+  }
 }
