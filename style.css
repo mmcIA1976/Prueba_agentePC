@@ -735,8 +735,12 @@ footer {
 @media (max-width: 900px) {
   .header-content { height: 60px; }
   .header-logo { width: 60px; height: 60px; }
-  .app-title { font-size: 1.5rem; margin-left: 50px; }
-  .user-info { margin-right: -50px; }
+  .app-title { 
+    font-size: 1.5rem; 
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .user-info { margin-right: 0; }
   .user-avatar { width: 34px; height: 34px; }
   .monitor-inner { width: 98vw; min-height: 420px; }
   .monitor-base { width: 85px; }
@@ -748,8 +752,12 @@ footer {
 @media (max-width: 600px) {
   .header-content { height: 46px; }
   .header-logo { width: 46px; height: 46px; }
-  .app-title { font-size: 1.11rem; margin-left: 20px; }
-  .user-info { margin-right: -20px; }
+  .app-title { 
+    font-size: 1.11rem; 
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .user-info { margin-right: 0; }
   .monitor-inner { border-radius: 13px; width: 99vw; min-height: 380px; }
   .monitor-base { width: 60px; }
   .login-logo { width: 58px; height: 58px; }
