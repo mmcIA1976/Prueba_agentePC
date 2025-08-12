@@ -1045,13 +1045,13 @@ footer {
   }
   
   #chat-form { 
-    gap: 5px; 
+    gap: 8px; 
     padding: 10px 12px;
     background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%);
     border-top: 1px solid rgba(255,255,255,0.2);
     backdrop-filter: blur(10px);
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
   }
   
@@ -1065,6 +1065,15 @@ footer {
     transition: all 0.3s ease;
     flex: 1;
     min-width: 0; /* Permite que el input se comprima si es necesario */
+    height: 44px; /* Altura fija para alinear con los botones */
+  }
+  
+  /* Contenedor vertical para los botones */
+  .chat-buttons-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
   }
   
   #chat-input:focus {
@@ -1074,17 +1083,21 @@ footer {
   }
   
   #chat-form button { 
-    padding: 10px 12px; 
-    font-size: 0.8rem;
-    border-radius: 18px;
+    padding: 8px 12px; 
+    font-size: 0.75rem;
+    border-radius: 12px;
     background: linear-gradient(135deg, #2e67f8 0%, #60b6fa 100%);
     box-shadow: 0 4px 12px rgba(46, 103, 248, 0.3);
     transition: all 0.3s ease;
     font-weight: 600;
-    min-width: 55px;
-    max-width: 70px;
+    min-width: 50px;
+    max-width: 60px;
+    height: 20px;
     flex-shrink: 0;
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   #chat-form button:hover {
@@ -1093,16 +1106,19 @@ footer {
   }
   
   #mic-button { 
-    min-width: 40px;
-    max-width: 40px;
-    width: 40px;
-    height: 40px;
-    padding: 8px;
-    border-radius: 50%;
+    min-width: 50px;
+    max-width: 60px;
+    width: 100%;
+    height: 20px;
+    padding: 6px;
+    border-radius: 12px;
     background: linear-gradient(135deg, #2ed573 0%, #26d65c 100%);
     box-shadow: 0 4px 12px rgba(46, 213, 115, 0.3);
     flex-shrink: 0;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   #mic-button:hover {
