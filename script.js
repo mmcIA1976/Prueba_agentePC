@@ -12,7 +12,7 @@ let thinkingTimeouts = [];
 let thinkingStartTime = null;
 const THINKING_AUDIO_URL = "https://icobjdsqjjkumxsrlflf.supabase.co/storage/v1/object/public/conversacionesagente/ElevenLabs_2025-08-11T17_13_57_Sara%20Martin%203_pvc_sp113_s50_sb50_se12_b_m2.mp3";
 const THINKING_AUDIO_URL_2 = "https://icobjdsqjjkumxsrlflf.supabase.co/storage/v1/object/public/conversacionesagente/ElevenLabs_2025-08-11T17_58_59_Sara%20Martin.mp3";
-const THINKING_INTERVALS = [15000, 40000, 80000, 110000]; // 15s, 40s, 1m20s, 1m50s
+const THINKING_INTERVALS = [20000, 40000, 80000, 110000]; // 20s, 40s, 1m20s, 1m50s
 
 const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
